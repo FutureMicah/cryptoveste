@@ -3,34 +3,154 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, Chrome } from "lucide-react";
+import { Mail, Lock, Chrome, Copy, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { useReferral } from "@/hooks/useReferral";
 
 const LoginPanel = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const { referralCode, hasDiscount, userReferralCode, processPayment, getReferralLink, getReferralStats } = useReferral();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    
+    if (isLogin) {
+      setIsLoading(true);
+      setTimeout(() => {
+        setIsLoading(false);
+        toast.success("Welcome back, Visionary. Your portfolio awaits.");
+      }, 1500);
+    } else {
+      setShowPayment(true);
+    }
+  };
 
-    // Simulate authentication
+  const handlePayment = () => {
+    setIsLoading(true);
+    
     setTimeout(() => {
+      const username = email.split('@')[0];
+      processPayment(username);
+      
       setIsLoading(false);
-      toast.success("Welcome back, Visionary. Your portfolio awaits.", {
-        duration: 3000,
-      });
+      setShowPayment(false);
+      
+      // DM to new user
+      toast.success(
+        hasDiscount 
+          ? "Welcome! You saved ₦5,000 with your referral code! 🎉"
+          : "Welcome to BlackPAL! Your account is now active.",
+        { duration: 5000 }
+      );
+
+      // DM to referrer (simulated)
+      if (hasDiscount && referralCode) {
+        setTimeout(() => {
+          toast.success(
+            `You earned ₦5,000! User @${username} paid via your link.`,
+            { duration: 5000 }
+          );
+        }, 1500);
+      }
     }, 1500);
   };
 
   const handleGoogleSignIn = () => {
-    toast.info("Google Sign-In integration ready. Connect OAuth to activate.", {
-      duration: 3000,
-    });
+    toast.info("Google Sign-In integration ready. Connect OAuth to activate.");
   };
 
+  const copyReferralLink = () => {
+    navigator.clipboard.writeText(getReferralLink());
+    toast.success("Link copied! Share it and earn ₦5,000 per signup.");
+  };
+
+  const stats = getReferralStats();
+
+  // Payment Screen
+  if (showPayment) {
+    const price = hasDiscount ? 20000 : 25000;
+    const stars = hasDiscount ? 140 : 180;
+    
+    return (
+      <motion.div
+        className="w-full max-w-md mx-auto px-4"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.div className="glass-panel rounded-2xl p-8 md:p-10">
+          <div className="space-y-6">
+            <motion.div
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="text-center space-y-2"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold text-gradient-gold">
+                Complete Your Access
+              </h2>
+              <p className="text-muted-foreground">
+                Join the elite traders' circle
+              </p>
+            </motion.div>
+
+            {hasDiscount && (
+              <motion.div
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                className="bg-primary/10 border border-primary/30 rounded-lg p-4 text-center"
+              >
+                <p className="text-primary font-semibold">
+                  🎉 Referral code applied!
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  You're saving ₦5,000
+                </p>
+              </motion.div>
+            )}
+
+            <div className="space-y-4">
+              <div className="text-center py-8 bg-background/50 rounded-lg border border-accent/20">
+                <div className="text-5xl font-bold text-accent mb-2">
+                  ₦{price.toLocaleString()}
+                </div>
+                <div className="text-muted-foreground">
+                  or {stars} Telegram Stars
+                </div>
+                {hasDiscount && (
+                  <div className="text-sm text-muted-foreground mt-2 line-through opacity-60">
+                    Original: ₦25,000
+                  </div>
+                )}
+              </div>
+
+              <Button
+                onClick={handlePayment}
+                disabled={isLoading}
+                className="w-full py-6 text-lg"
+                variant="premium"
+              >
+                {isLoading ? "Processing..." : "Confirm Payment"}
+              </Button>
+
+              <Button
+                onClick={() => setShowPayment(false)}
+                variant="outline"
+                className="w-full py-6"
+              >
+                Back
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  }
+
+  // Login/Signup Screen
   return (
     <motion.div
       className="w-full max-w-md mx-auto px-4"
@@ -38,7 +158,6 @@ const LoginPanel = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
-      {/* Glass Panel */}
       <motion.div
         className="glass-panel rounded-2xl p-8 md:p-10 relative overflow-hidden"
         whileHover={{ scale: 1.01 }}
@@ -57,7 +176,6 @@ const LoginPanel = () => {
           transition={{ duration: 6, repeat: Infinity }}
         />
 
-        {/* Content */}
         <div className="relative z-10">
           <motion.h2
             className="text-3xl md:text-4xl font-bold text-center mb-2 text-gradient-gold"
@@ -207,6 +325,50 @@ const LoginPanel = () => {
                 )}
               </button>
             </motion.div>
+
+            {/* Referral Section */}
+            {!isLogin && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.0 }}
+                className="mt-6 pt-6 border-t border-accent/20 space-y-3"
+              >
+                <div className="text-center space-y-1">
+                  <p className="text-sm text-muted-foreground">Your referral code</p>
+                  <p className="text-xl font-mono font-bold text-accent">{userReferralCode}</p>
+                </div>
+                
+                <Button
+                  type="button"
+                  onClick={copyReferralLink}
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2 border-accent/30"
+                >
+                  <Copy className="w-4 h-4" />
+                  Share Your Link
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground">
+                  Earn ₦5,000 for each friend who joins
+                </p>
+
+                {stats.referrals.length > 0 && (
+                  <div className="text-center py-3 bg-primary/5 rounded-lg border border-primary/20">
+                    <div className="flex items-center justify-center gap-2 text-primary mb-1">
+                      <TrendingUp className="w-4 h-4" />
+                      <span className="font-semibold text-sm">
+                        {stats.referrals.length} referral{stats.referrals.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="text-accent font-bold text-lg">
+                      ₦{stats.earnings.toLocaleString()} earned
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
           </form>
         </div>
       </motion.div>
