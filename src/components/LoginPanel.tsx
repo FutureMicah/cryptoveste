@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Mail, Lock, Chrome, Copy, TrendingUp } from "lucide-react";
+import { Mail, Lock, Chrome, Copy, TrendingUp, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useReferral } from "@/hooks/useReferral";
+import FloatingInput from "./FloatingInput";
+import DynamicGreeting from "./DynamicGreeting";
+import MotivationalQuotes from "./MotivationalQuotes";
 
 const LoginPanel = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,7 +23,7 @@ const LoginPanel = () => {
       setIsLoading(true);
       setTimeout(() => {
         setIsLoading(false);
-        toast.success("Welcome back, Visionary. Your portfolio awaits.");
+        toast.success("Access Granted. Welcome back, Ascendant.");
       }, 1500);
     } else {
       setShowPayment(true);
@@ -43,7 +44,7 @@ const LoginPanel = () => {
       toast.success(
         hasDiscount 
           ? "Welcome! You saved ₦5,000 with your referral code! 🎉"
-          : "Welcome to BlackPAL! Your account is now active.",
+          : "Welcome back, Ascendant. Your path awaits.",
         { duration: 5000 }
       );
 
@@ -65,7 +66,7 @@ const LoginPanel = () => {
 
   const copyReferralLink = () => {
     navigator.clipboard.writeText(getReferralLink());
-    toast.success("Link copied! Share it and earn ₦5,000 per signup.");
+    toast.success("Link copied! Share the power.");
   };
 
   const stats = getReferralStats();
@@ -77,23 +78,36 @@ const LoginPanel = () => {
     
     return (
       <motion.div
-        className="w-full max-w-md mx-auto px-4"
+        className="w-full max-w-lg mx-auto px-4"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <motion.div className="glass-panel rounded-2xl p-8 md:p-10">
-          <div className="space-y-6">
+        <motion.div className="glass-card rounded-3xl p-8 md:p-10 relative overflow-hidden">
+          {/* Animated Glow Background */}
+          <motion.div
+            className="absolute inset-0 opacity-20"
+            animate={{
+              background: [
+                "radial-gradient(circle at 30% 50%, rgba(0,255,255,0.3) 0%, transparent 50%)",
+                "radial-gradient(circle at 70% 50%, rgba(255,215,0,0.3) 0%, transparent 50%)",
+                "radial-gradient(circle at 30% 50%, rgba(0,255,255,0.3) 0%, transparent 50%)",
+              ],
+            }}
+            transition={{ duration: 5, repeat: Infinity }}
+          />
+
+          <div className="relative z-10 space-y-6">
             <motion.div
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              className="text-center space-y-2"
+              className="text-center space-y-3"
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gradient-gold">
-                Complete Your Access
+              <h2 className="text-3xl md:text-5xl font-bold text-gradient-cyan">
+                Secure Network Access
               </h2>
-              <p className="text-muted-foreground">
-                Join the elite traders' circle
+              <p className="text-muted-foreground text-sm md:text-base">
+                Join the elite traders' network
               </p>
             </motion.div>
 
@@ -101,48 +115,71 @@ const LoginPanel = () => {
               <motion.div
                 initial={{ scale: 0.95 }}
                 animate={{ scale: 1 }}
-                className="bg-primary/10 border border-primary/30 rounded-lg p-4 text-center"
+                className="bg-accent/10 border border-accent/30 rounded-xl p-4 text-center cyan-glow"
               >
-                <p className="text-primary font-semibold">
-                  🎉 Referral code applied!
+                <p className="text-accent font-bold text-lg">
+                  🎉 Referral Code Applied!
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-muted-foreground text-sm mt-1">
                   You're saving ₦5,000
                 </p>
               </motion.div>
             )}
 
-            <div className="space-y-4">
-              <div className="text-center py-8 bg-background/50 rounded-lg border border-accent/20">
-                <div className="text-5xl font-bold text-accent mb-2">
+            <motion.div className="text-center py-10 bg-background/30 rounded-2xl border border-accent/20 relative overflow-hidden">
+              <motion.div
+                className="absolute inset-0 opacity-10"
+                animate={{
+                  background: [
+                    "linear-gradient(0deg, transparent, rgba(0,255,255,0.3), transparent)",
+                    "linear-gradient(180deg, transparent, rgba(0,255,255,0.3), transparent)",
+                  ],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+              <div className="relative z-10">
+                <div className="text-6xl md:text-7xl font-bold text-gradient-cyan mb-3">
                   ₦{price.toLocaleString()}
                 </div>
-                <div className="text-muted-foreground">
-                  or {stars} Telegram Stars
+                <div className="text-muted-foreground text-lg">
+                  {stars} Telegram Stars
                 </div>
                 {hasDiscount && (
                   <div className="text-sm text-muted-foreground mt-2 line-through opacity-60">
-                    Original: ₦25,000
+                    Original: ₦25,000 (180 Stars)
                   </div>
                 )}
               </div>
+            </motion.div>
 
-              <Button
-                onClick={handlePayment}
-                disabled={isLoading}
-                className="w-full py-6 text-lg"
-                variant="premium"
-              >
-                {isLoading ? "Processing..." : "Confirm Payment"}
-              </Button>
+            <Button
+              onClick={handlePayment}
+              disabled={isLoading}
+              className="w-full py-7 text-lg metallic-gradient text-black font-bold ripple-button rounded-xl hover:scale-105 transition-all duration-300"
+            >
+              {isLoading ? (
+                <motion.span
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  Processing Payment...
+                </motion.span>
+              ) : (
+                "Confirm Payment"
+              )}
+            </Button>
 
-              <Button
-                onClick={() => setShowPayment(false)}
-                variant="outline"
-                className="w-full py-6"
-              >
-                Back
-              </Button>
+            <Button
+              onClick={() => setShowPayment(false)}
+              variant="outline"
+              className="w-full py-6 rounded-xl border-white/20 hover:border-accent/50 transition-all duration-300"
+            >
+              Back
+            </Button>
+
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-2">
+              <Shield className="w-4 h-4" />
+              <span>Protected by BlackPAL Network</span>
             </div>
           </div>
         </motion.div>
@@ -153,132 +190,138 @@ const LoginPanel = () => {
   // Login/Signup Screen
   return (
     <motion.div
-      className="w-full max-w-md mx-auto px-4"
-      initial={{ opacity: 0, y: 30 }}
+      className="w-full max-w-lg mx-auto px-4"
+      initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
     >
       <motion.div
-        className="glass-panel rounded-2xl p-8 md:p-10 relative overflow-hidden"
-        whileHover={{ scale: 1.01 }}
-        transition={{ duration: 0.3 }}
+        className="glass-card rounded-3xl p-8 md:p-12 relative overflow-hidden"
+        style={{
+          boxShadow: "0 0 60px rgba(0,255,255,0.15), 0 8px 32px rgba(0,0,0,0.4)",
+        }}
       >
-        {/* Ambient Glow */}
+        {/* Mouse-Follow Reflection Effect */}
         <motion.div
-          className="absolute inset-0 opacity-30 pointer-events-none"
+          className="absolute inset-0 opacity-10 pointer-events-none"
           animate={{
             background: [
-              "radial-gradient(circle at 20% 50%, hsl(51 100% 50% / 0.1) 0%, transparent 50%)",
-              "radial-gradient(circle at 80% 50%, hsl(194 100% 50% / 0.1) 0%, transparent 50%)",
-              "radial-gradient(circle at 20% 50%, hsl(51 100% 50% / 0.1) 0%, transparent 50%)",
+              "radial-gradient(circle at 20% 30%, rgba(0,255,255,0.4) 0%, transparent 40%)",
+              "radial-gradient(circle at 80% 70%, rgba(255,215,0,0.4) 0%, transparent 40%)",
+              "radial-gradient(circle at 20% 30%, rgba(0,255,255,0.4) 0%, transparent 40%)",
             ],
           }}
-          transition={{ duration: 6, repeat: Infinity }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
 
-        <div className="relative z-10">
-          <motion.h2
-            className="text-3xl md:text-4xl font-bold text-center mb-2 text-gradient-gold"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            {isLogin ? "Access Your Portfolio" : "Create Your Legacy"}
-          </motion.h2>
-          
-          <motion.p
-            className="text-center text-muted-foreground mb-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            {isLogin
-              ? "Continue your journey in precision trading"
-              : "Join the elite circle of visionaries"}
-          </motion.p>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input */}
-            <motion.div
-              className="space-y-2"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+        <div className="relative z-10 space-y-6">
+          {/* Dynamic Greeting */}
+          <div className="text-center mb-6">
+            <DynamicGreeting />
+            <motion.p
+              className="text-muted-foreground text-sm md:text-base mt-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              <Label htmlFor="email" className="text-foreground">
-                Email / Username
-              </Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-11"
-                  required
-                />
-              </div>
-            </motion.div>
+              {isLogin ? "Welcome back, Ascendant" : "Join the Elite Circle"}
+            </motion.p>
+          </div>
 
-            {/* Password Input */}
+          {/* Motivational Quotes */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mb-8"
+          >
+            <MotivationalQuotes />
+          </motion.div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Floating Email Input */}
             <motion.div
-              className="space-y-2"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
+              transition={{ delay: 0.6 }}
             >
-              <Label htmlFor="password" className="text-foreground">
-                Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-11"
-                  required
-                />
-              </div>
+              <FloatingInput
+                label="Email Address"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                icon={<Mail size={18} />}
+                required
+              />
             </motion.div>
 
-            {/* Primary Button */}
+            {/* Floating Password Input */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <FloatingInput
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                icon={<Lock size={18} />}
+                required
+              />
+            </motion.div>
+
+            {/* Primary Action Button */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
+              transition={{ delay: 0.8 }}
+              className="pt-2"
             >
               <Button
                 type="submit"
                 disabled={isLoading}
-                variant="premium"
-                className="w-full py-6 text-lg rounded-xl"
+                className="w-full py-7 text-lg metallic-gradient text-black font-bold ripple-button rounded-xl hover:scale-105 transition-all duration-300 shadow-lg"
               >
-                {isLoading
-                  ? "Syncing data..."
-                  : isLogin
-                  ? "Enter the Arena"
-                  : "Activate Account"}
+                {isLoading ? (
+                  <motion.span
+                    animate={{ opacity: [1, 0.5, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    Accessing Secure Network...
+                  </motion.span>
+                ) : isLogin ? (
+                  "Login Securely"
+                ) : (
+                  "Create Account"
+                )}
               </Button>
+            </motion.div>
+
+            {/* Security Badge */}
+            <motion.div
+              className="flex items-center justify-center gap-2 text-xs text-muted-foreground"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+            >
+              <Shield className="w-3 h-3" />
+              <span>Protected by BlackPAL Network</span>
             </motion.div>
 
             {/* Divider */}
             <motion.div
-              className="relative my-6"
+              className="relative my-8"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
+              transition={{ delay: 1.0 }}
             >
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-accent/30"></div>
+                <div className="w-full border-t border-accent/20"></div>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-card text-muted-foreground">
-                  or connect instantly
+              <div className="relative flex justify-center text-xs">
+                <span className="px-4 bg-background text-muted-foreground uppercase tracking-wider">
+                  or continue with
                 </span>
               </div>
             </motion.div>
@@ -287,13 +330,13 @@ const LoginPanel = () => {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
+              transition={{ delay: 1.1 }}
             >
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleGoogleSignIn}
-                className="w-full border-accent/50 hover:bg-accent/10 hover:border-accent transition-all duration-300 py-6 text-lg rounded-xl"
+                className="w-full border-white/20 hover:border-accent/50 hover:bg-accent/5 transition-all duration-300 py-6 text-base rounded-xl"
               >
                 <Chrome className="mr-3 h-5 w-5" />
                 Continue with Google
@@ -302,25 +345,25 @@ const LoginPanel = () => {
 
             {/* Toggle Login/Signup */}
             <motion.div
-              className="text-center pt-4"
+              className="text-center pt-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.9 }}
+              transition={{ delay: 1.2 }}
             >
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-muted-foreground hover:text-accent transition-colors duration-300"
+                className="text-sm text-muted-foreground hover:text-accent transition-colors duration-300 underline-offset-4 hover:underline"
               >
                 {isLogin ? (
                   <>
                     New to BlackPAL?{" "}
-                    <span className="text-accent font-semibold">Create Legacy</span>
+                    <span className="text-accent font-bold">Create Legacy →</span>
                   </>
                 ) : (
                   <>
-                    Already have access?{" "}
-                    <span className="text-accent font-semibold">Enter Arena</span>
+                    Already Ascended?{" "}
+                    <span className="text-accent font-bold">Sign In →</span>
                   </>
                 )}
               </button>
@@ -331,46 +374,67 @@ const LoginPanel = () => {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.0 }}
-                className="mt-6 pt-6 border-t border-accent/20 space-y-3"
+                transition={{ delay: 1.3 }}
+                className="mt-8 pt-8 border-t border-accent/20 space-y-4"
               >
-                <div className="text-center space-y-1">
-                  <p className="text-sm text-muted-foreground">Your referral code</p>
-                  <p className="text-xl font-mono font-bold text-accent">{userReferralCode}</p>
+                <div className="text-center space-y-2">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                    Your Referral Code
+                  </p>
+                  <motion.p
+                    className="text-2xl font-mono font-bold text-gradient-cyan"
+                    animate={{ opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    {userReferralCode}
+                  </motion.p>
                 </div>
                 
                 <Button
                   type="button"
                   onClick={copyReferralLink}
                   variant="outline"
-                  size="sm"
-                  className="w-full gap-2 border-accent/30"
+                  className="w-full gap-2 border-accent/30 hover:border-accent/50 py-5 rounded-xl"
                 >
                   <Copy className="w-4 h-4" />
-                  Share Your Link
+                  Copy Referral Link
                 </Button>
 
-                <p className="text-xs text-center text-muted-foreground">
-                  Earn ₦5,000 for each friend who joins
+                <p className="text-xs text-center text-muted-foreground italic">
+                  Earn ₦5,000 for each successful referral
                 </p>
 
                 {stats.referrals.length > 0 && (
-                  <div className="text-center py-3 bg-primary/5 rounded-lg border border-primary/20">
-                    <div className="flex items-center justify-center gap-2 text-primary mb-1">
-                      <TrendingUp className="w-4 h-4" />
-                      <span className="font-semibold text-sm">
-                        {stats.referrals.length} referral{stats.referrals.length > 1 ? 's' : ''}
+                  <motion.div
+                    className="text-center py-4 bg-accent/5 rounded-xl border border-accent/20"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <div className="flex items-center justify-center gap-2 text-accent mb-2">
+                      <TrendingUp className="w-5 h-5" />
+                      <span className="font-bold text-sm">
+                        {stats.referrals.length} Referral{stats.referrals.length > 1 ? 's' : ''} Active
                       </span>
                     </div>
-                    <div className="text-accent font-bold text-lg">
-                      ₦{stats.earnings.toLocaleString()} earned
+                    <div className="text-gradient-cyan font-bold text-2xl">
+                      ₦{stats.earnings.toLocaleString()}
                     </div>
-                  </div>
+                    <p className="text-xs text-muted-foreground mt-1">Total Earned</p>
+                  </motion.div>
                 )}
               </motion.div>
             )}
           </form>
         </div>
+      </motion.div>
+
+      {/* Footer Badge */}
+      <motion.div
+        className="text-center mt-6 text-xs text-muted-foreground opacity-60"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.6 }}
+        transition={{ delay: 1.4 }}
+      >
+        Power isn't given — it's logged in.
       </motion.div>
     </motion.div>
   );
