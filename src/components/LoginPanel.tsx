@@ -7,6 +7,7 @@ import { useReferral } from "@/hooks/useReferral";
 import FloatingInput from "./FloatingInput";
 import DynamicGreeting from "./DynamicGreeting";
 import MotivationalQuotes from "./MotivationalQuotes";
+import { usePaystackPayment } from "react-paystack";
 
 const LoginPanel = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -30,34 +31,56 @@ const LoginPanel = () => {
     }
   };
 
-  const handlePayment = () => {
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      const username = email.split('@')[0];
-      processPayment(username);
-      
-      setIsLoading(false);
-      setShowPayment(false);
-      
-      // DM to new user
-      toast.success(
-        hasDiscount 
-          ? "Welcome! You saved ₦5,000 with your referral code! 🎉"
-          : "Welcome back, Ascendant. Your path awaits.",
-        { duration: 5000 }
-      );
+  const price = hasDiscount ? 20000 : 25000;
+  const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "";
+  
+  const paystackConfig = {
+    reference: `BP_${new Date().getTime()}_${Math.random().toString(36).substring(7)}`,
+    email: email,
+    amount: price * 100, // Paystack expects amount in kobo
+    publicKey: publicKey,
+  };
 
-      // DM to referrer (simulated)
-      if (hasDiscount && referralCode) {
-        setTimeout(() => {
-          toast.success(
-            `You earned ₦5,000! User @${username} paid via your link.`,
-            { duration: 5000 }
-          );
-        }, 1500);
-      }
-    }, 1500);
+  const onSuccess = () => {
+    const username = email.split('@')[0];
+    processPayment(username);
+    
+    setIsLoading(false);
+    setShowPayment(false);
+    
+    // DM to new user
+    toast.success(
+      hasDiscount 
+        ? "Welcome! You saved ₦5,000 with your referral code! 🎉"
+        : "Payment successful! Welcome to BlackPAL Network.",
+      { duration: 5000 }
+    );
+
+    // DM to referrer (simulated)
+    if (hasDiscount && referralCode) {
+      setTimeout(() => {
+        toast.success(
+          `You earned ₦5,000! User @${username} paid via your link.`,
+          { duration: 5000 }
+        );
+      }, 1500);
+    }
+  };
+
+  const onClose = () => {
+    toast.error("Payment cancelled. Please try again.");
+    setIsLoading(false);
+  };
+
+  const initializePayment = usePaystackPayment(paystackConfig);
+
+  const handlePayment = () => {
+    if (!publicKey || publicKey === "your_paystack_public_key_here") {
+      toast.error("Paystack not configured. Please add your public key.");
+      return;
+    }
+    setIsLoading(true);
+    initializePayment({ onSuccess, onClose });
   };
 
   const handleGoogleSignIn = () => {
@@ -73,7 +96,6 @@ const LoginPanel = () => {
 
   // Payment Screen
   if (showPayment) {
-    const price = hasDiscount ? 20000 : 25000;
     const stars = hasDiscount ? 140 : 180;
     
     return (
