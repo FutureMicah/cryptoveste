@@ -8,6 +8,7 @@ import FloatingInput from "./FloatingInput";
 import DynamicGreeting from "./DynamicGreeting";
 import MotivationalQuotes from "./MotivationalQuotes";
 import { usePaystackPayment } from "react-paystack";
+import { supabase } from "@/integrations/supabase/client";
 
 const LoginPanel = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -83,8 +84,24 @@ const LoginPanel = () => {
     initializePayment({ onSuccess, onClose });
   };
 
-  const handleGoogleSignIn = () => {
-    toast.info("Google Sign-In integration ready. Connect OAuth to activate.");
+  const handleGoogleSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+          },
+        },
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error("Google sign-in error:", error);
+      toast.error(error.message || "Google sign-in failed. Please try again.");
+    }
   };
 
   const copyReferralLink = () => {
