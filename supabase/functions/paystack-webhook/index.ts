@@ -39,7 +39,7 @@ serve(async (req) => {
 
     // Handle payment success
     if (event.event === "charge.success") {
-      const { reference, customer, amount } = event.data;
+      const { reference, customer, amount, metadata } = event.data;
       const email = customer.email;
 
       const supabase = createClient(
@@ -47,48 +47,100 @@ serve(async (req) => {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
 
-      // Record payment
-      const { error: paymentError } = await supabase
+      // Find the payment by reference or create new one
+      const { data: existingPayment, error: findError } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("reference", reference)
+        .maybeSingle();
+
+      if (findError) {
+        console.error("Error finding payment:", findError);
+      }
+
+      // Record or update payment
+      const { data: payment, error: paymentError } = await supabase
         .from("payments")
         .upsert({
+          id: existingPayment?.id,
           reference,
           user_email: email,
+          user_id: existingPayment?.user_id || metadata?.user_id,
           amount: amount / 100, // Convert from kobo to naira
+          currency: "NGN",
+          payment_type: "enrollment",
           status: "completed",
           payment_method: "paystack",
-        });
+          referral_code_used: existingPayment?.referral_code_used || metadata?.referral_code,
+        }, {
+          onConflict: "reference"
+        })
+        .select()
+        .single();
 
       if (paymentError) {
         console.error("Payment record error:", paymentError);
+        return new Response(JSON.stringify({ error: "Payment update failed" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      console.log("Payment verified successfully:", reference);
+
+      // Auto-verify any pending payment proofs for this payment
+      if (payment?.id) {
+        const { error: proofError } = await supabase
+          .from("payment_proofs")
+          .update({
+            status: "auto_verified",
+            verified_at: new Date().toISOString(),
+          })
+          .eq("payment_id", payment.id)
+          .eq("status", "submitted");
+
+        if (proofError) {
+          console.error("Error auto-verifying proof:", proofError);
+        } else {
+          console.log("Auto-verified payment proofs for payment:", payment.id);
+        }
       }
 
       // Check for referral and update earnings
-      const { data: payment } = await supabase
-        .from("payments")
-        .select("referral_code_used")
-        .eq("reference", reference)
-        .single();
-
       if (payment?.referral_code_used) {
-        const { error: earningsError } = await supabase
+        const { data: referrerProfile } = await supabase
           .from("profiles")
-          .update({ 
-            total_earnings: supabase.rpc("increment_earnings", { code: payment.referral_code_used, amount: 5000 })
-          })
-          .eq("referral_code", payment.referral_code_used);
+          .select("total_earnings, referral_code")
+          .eq("referral_code", payment.referral_code_used)
+          .single();
 
-        if (earningsError) {
-          console.error("Earnings update error:", earningsError);
+        if (referrerProfile) {
+          const newEarnings = (referrerProfile.total_earnings || 0) + 5000;
+          
+          const { error: earningsError } = await supabase
+            .from("profiles")
+            .update({ total_earnings: newEarnings })
+            .eq("referral_code", payment.referral_code_used);
+
+          if (earningsError) {
+            console.error("Earnings update error:", earningsError);
+          } else {
+            console.log("Updated referrer earnings:", newEarnings);
+          }
+
+          // Update referral status
+          await supabase
+            .from("referrals")
+            .update({ 
+              status: "completed", 
+              completed_at: new Date().toISOString(),
+              amount: 5000 
+            })
+            .eq("payment_id", payment.id);
         }
-
-        // Update referral status
-        await supabase
-          .from("referrals")
-          .update({ status: "completed", completed_at: new Date().toISOString() })
-          .eq("payment_id", reference);
       }
 
-      console.log("Payment processed successfully:", reference);
+      console.log("Payment processing complete:", reference);
     }
 
     return new Response(JSON.stringify({ received: true }), {
