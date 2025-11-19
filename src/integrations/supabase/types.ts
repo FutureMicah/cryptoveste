@@ -14,6 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
+      document_uploads: {
+        Row: {
+          created_at: string | null
+          doc_type: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          ocr_data: Json | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          doc_type: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          ocr_data?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          doc_type?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          ocr_data?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payment_proofs: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          currency: string | null
+          document_id: string | null
+          id: string
+          payment_id: string | null
+          rejection_reason: string | null
+          status: string | null
+          tx_reference: string | null
+          updated_at: string | null
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          currency?: string | null
+          document_id?: string | null
+          id?: string
+          payment_id?: string | null
+          rejection_reason?: string | null
+          status?: string | null
+          tx_reference?: string | null
+          updated_at?: string | null
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          currency?: string | null
+          document_id?: string | null
+          id?: string
+          payment_id?: string | null
+          rejection_reason?: string | null
+          status?: string | null
+          tx_reference?: string | null
+          updated_at?: string | null
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_proofs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_proofs_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -21,10 +126,12 @@ export type Database = {
           currency: string | null
           id: string
           payment_type: string
+          reference: string | null
           referral_code_used: string | null
           stars: number
           status: string | null
           transaction_id: string | null
+          user_email: string | null
           user_id: string
         }
         Insert: {
@@ -33,10 +140,12 @@ export type Database = {
           currency?: string | null
           id?: string
           payment_type: string
+          reference?: string | null
           referral_code_used?: string | null
           stars: number
           status?: string | null
           transaction_id?: string | null
+          user_email?: string | null
           user_id: string
         }
         Update: {
@@ -45,10 +154,12 @@ export type Database = {
           currency?: string | null
           id?: string
           payment_type?: string
+          reference?: string | null
           referral_code_used?: string | null
           stars?: number
           status?: string | null
           transaction_id?: string | null
+          user_email?: string | null
           user_id?: string
         }
         Relationships: [
@@ -196,15 +307,43 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       generate_referral_code: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "student" | "investor" | "admin" | "super_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -331,6 +470,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["student", "investor", "admin", "super_admin"],
+    },
   },
 } as const
