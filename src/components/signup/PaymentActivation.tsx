@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Bitcoin, Building2, Wallet } from "lucide-react";
 import { usePaystackPayment } from "react-paystack";
 import { toast } from "sonner";
+import { PaymentScreenshotUpload } from "./PaymentScreenshotUpload";
+import { PaymentVerificationSuccess } from "./PaymentVerificationSuccess";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PaymentActivationProps {
   userData: any;
@@ -14,6 +17,8 @@ interface PaymentActivationProps {
 const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivationProps) => {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showScreenshotUpload, setShowScreenshotUpload] = useState(false);
+  const [showVerificationSuccess, setShowVerificationSuccess] = useState(false);
 
   const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "";
 
@@ -27,16 +32,18 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
   const initializePayment = usePaystackPayment(paystackConfig);
 
   const handlePaystackPayment = () => {
-    if (!publicKey || publicKey === "pk_live_7d076288af07c789e6e6baf4276f17c4b3e8c290") {
+    if (!publicKey) {
       toast.error("Payment system not configured");
       return;
     }
 
     setIsProcessing(true);
+
     initializePayment({
       onSuccess: () => {
-        toast.success("Payment successful! Welcome to BlackPAL");
-        onComplete();
+        toast.success("Payment initiated! Please upload your payment screenshot.");
+        setShowScreenshotUpload(true);
+        setIsProcessing(false);
       },
       onClose: () => {
         toast.error("Payment cancelled");
@@ -86,26 +93,33 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
   ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="w-full max-w-2xl mx-auto px-4"
-    >
-      <div className="glass-card rounded-3xl p-8 md:p-10">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <motion.h1
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-3xl md:text-4xl font-bold text-foreground mb-2"
-          >
-            Activate Your Account
-          </motion.h1>
-          <p className="text-muted-foreground">
-            Complete payment to unlock full access
-          </p>
-        </div>
+    <>
+      <AnimatePresence>
+        {showVerificationSuccess && (
+          <PaymentVerificationSuccess onComplete={onComplete} />
+        )}
+      </AnimatePresence>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="w-full max-w-2xl mx-auto px-4"
+      >
+        <div className="glass-card rounded-3xl p-8 md:p-10">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <motion.h1
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-3xl md:text-4xl font-bold text-foreground mb-2"
+            >
+              Activate Your Account
+            </motion.h1>
+            <p className="text-muted-foreground">
+              Complete payment to unlock full access
+            </p>
+          </div>
 
         {/* Country & Fee Info */}
         <motion.div
@@ -185,20 +199,28 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
         </div>
 
         {/* Proceed Button */}
-        <Button
-          onClick={() => {
-            const method = paymentMethods.find(m => m.id === selectedMethod);
-            if (method && method.available) {
-              method.handler();
-            } else {
-              toast.error("Please select a payment method");
-            }
-          }}
-          disabled={!selectedMethod || isProcessing}
-          className="w-full h-14 text-lg font-semibold"
-        >
-          {isProcessing ? "Processing..." : "Proceed to Payment"}
-        </Button>
+        {!showScreenshotUpload ? (
+          <Button
+            onClick={() => {
+              const method = paymentMethods.find(m => m.id === selectedMethod);
+              if (method && method.available) {
+                method.handler();
+              } else {
+                toast.error("Please select a payment method");
+              }
+            }}
+            disabled={!selectedMethod || isProcessing}
+            className="w-full h-14 text-lg font-semibold"
+          >
+            {isProcessing ? "Processing..." : "Proceed to Payment"}
+          </Button>
+        ) : (
+          <PaymentScreenshotUpload
+            expectedAmount={countryInfo.fee}
+            currency={countryInfo.currency}
+            onVerified={() => setShowVerificationSuccess(true)}
+          />
+        )}
 
         {/* Security Badge */}
         <motion.p
@@ -211,6 +233,7 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
         </motion.p>
       </div>
     </motion.div>
+    </>
   );
 };
 
