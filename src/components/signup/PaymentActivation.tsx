@@ -219,6 +219,7 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
             expectedAmount={countryInfo.fee}
             currency={countryInfo.currency}
             onVerified={() => setShowVerificationSuccess(true)}
+            userFullName={`${userData.formData.firstName} ${userData.formData.lastName}`}
           />
         )}
 
