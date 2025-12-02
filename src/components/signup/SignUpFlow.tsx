@@ -5,9 +5,10 @@ import PathSelection from "./PathSelection";
 import IdentityCreation from "./IdentityCreation";
 import PaymentActivation from "./PaymentActivation";
 import WelcomeFinalization from "./WelcomeFinalization";
+import InvestorKYCFlow from "./InvestorKYCFlow";
 
 const SignUpFlow = () => {
-  const [step, setStep] = useState<"preload" | "path" | "identity" | "payment" | "welcome">("preload");
+  const [step, setStep] = useState<"preload" | "path" | "identity" | "payment" | "kyc" | "welcome">("preload");
   const [accountType, setAccountType] = useState<"student" | "investor" | null>(null);
   const [userData, setUserData] = useState<any>(null);
 
@@ -18,6 +19,15 @@ const SignUpFlow = () => {
 
   const handleIdentityComplete = (data: any) => {
     setUserData(data);
+    // Investors go to KYC, students go to payment
+    if (data.accountType === "investor") {
+      setStep("kyc");
+    } else {
+      setStep("payment");
+    }
+  };
+
+  const handleKYCComplete = () => {
     setStep("payment");
   };
 
@@ -44,6 +54,12 @@ const SignUpFlow = () => {
               accountType={accountType}
               onNext={handleIdentityComplete}
             />
+          </div>
+        )}
+
+        {step === "kyc" && userData && (
+          <div key="kyc" className="min-h-screen flex items-center justify-center py-12">
+            <InvestorKYCFlow onComplete={handleKYCComplete} />
           </div>
         )}
 

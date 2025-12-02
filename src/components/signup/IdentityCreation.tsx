@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Mail, Lock, User, Phone, Tag, Chrome } from "lucide-react";
 import FloatingInput from "../FloatingInput";
 import PasswordStrengthMeter from "./PasswordStrengthMeter";
-import GeoDetector from "./GeoDetector";
+import EnhancedGeoDetector from "./EnhancedGeoDetector";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -133,7 +133,7 @@ const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
 
         {/* Country Detection */}
         <div className="mb-6">
-          <GeoDetector onCountryDetected={setCountryInfo} />
+          <EnhancedGeoDetector onCountryDetected={setCountryInfo} blockVPN={true} />
         </div>
 
         {/* Form */}
