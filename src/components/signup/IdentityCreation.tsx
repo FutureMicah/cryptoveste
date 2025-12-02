@@ -25,7 +25,8 @@ interface IdentityCreationProps {
 
 const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -60,7 +61,8 @@ const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            full_name: formData.fullName,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
             phone: formData.phone,
             account_type: accountType,
             referral_code: formData.referralCode || null,
@@ -136,13 +138,22 @@ const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          <FloatingInput
-            label="Full Name"
-            icon={<User className="w-5 h-5" />}
-            value={formData.fullName}
-            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-            required
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FloatingInput
+              label="First Name"
+              icon={<User className="w-5 h-5" />}
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              required
+            />
+            <FloatingInput
+              label="Last Name"
+              icon={<User className="w-5 h-5" />}
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              required
+            />
+          </div>
 
           <FloatingInput
             label="Email"

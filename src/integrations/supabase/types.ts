@@ -63,6 +63,8 @@ export type Database = {
           currency: string | null
           document_id: string | null
           id: string
+          name_verification_status: string | null
+          payment_account_name: string | null
           payment_id: string | null
           rejection_reason: string | null
           status: string | null
@@ -78,6 +80,8 @@ export type Database = {
           currency?: string | null
           document_id?: string | null
           id?: string
+          name_verification_status?: string | null
+          payment_account_name?: string | null
           payment_id?: string | null
           rejection_reason?: string | null
           status?: string | null
@@ -93,6 +97,8 @@ export type Database = {
           currency?: string | null
           document_id?: string | null
           id?: string
+          name_verification_status?: string | null
+          payment_account_name?: string | null
           payment_id?: string | null
           rejection_reason?: string | null
           status?: string | null

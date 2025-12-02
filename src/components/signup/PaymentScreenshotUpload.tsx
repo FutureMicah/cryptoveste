@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, CheckCircle, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { Upload, CheckCircle, AlertCircle, Image as ImageIcon, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import FloatingInput from "../FloatingInput";
 
 interface PaymentScreenshotUploadProps {
   paymentId?: string;
@@ -11,6 +12,7 @@ interface PaymentScreenshotUploadProps {
   expectedAmount?: number;
   currency?: string;
   onVerified?: () => void;
+  userFullName: string;
 }
 
 export const PaymentScreenshotUpload = ({
@@ -19,15 +21,23 @@ export const PaymentScreenshotUpload = ({
   expectedAmount,
   currency = "NGN",
   onVerified,
+  userFullName,
 }: PaymentScreenshotUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [uploadComplete, setUploadComplete] = useState(false);
+  const [paymentAccountName, setPaymentAccountName] = useState("");
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate payment account name first
+    if (!paymentAccountName.trim()) {
+      toast.error("Please enter the name on your payment account first");
+      return;
+    }
 
     // Validate file type
     const validTypes = ["image/png", "image/jpeg", "image/jpg", "application/pdf"];
@@ -85,7 +95,16 @@ export const PaymentScreenshotUpload = ({
 
       if (docError) throw docError;
 
-      // Create payment proof record
+      // Name verification - normalize for comparison
+      const normalizeString = (str: string) => 
+        str.toLowerCase().replace(/\s+/g, '').replace(/[^a-z]/g, '');
+      
+      const userNameNormalized = normalizeString(userFullName);
+      const paymentNameNormalized = normalizeString(paymentAccountName);
+      
+      const nameMatch = userNameNormalized === paymentNameNormalized;
+
+      // Create payment proof record with name verification
       const { error: proofError } = await supabase
         .from("payment_proofs")
         .insert({
@@ -95,9 +114,17 @@ export const PaymentScreenshotUpload = ({
           amount: expectedAmount,
           currency: currency,
           status: "submitted",
+          payment_account_name: paymentAccountName,
+          name_verification_status: nameMatch ? "verified" : "failed",
         });
 
       if (proofError) throw proofError;
+
+      if (!nameMatch) {
+        toast.warning("Name mismatch detected - payment will require manual admin verification", {
+          duration: 5000,
+        });
+      }
 
       setUploadComplete(true);
       toast.success("Screenshot uploaded! Verification in progress...");
@@ -145,7 +172,23 @@ export const PaymentScreenshotUpload = ({
               All payments must include a screenshot showing: transaction date, amount,
               recipient (BlackPAL/BlackTrader Academy), and transaction ID/reference.
             </p>
+            <p className="text-muted-foreground font-medium mt-2">
+              ⚠️ The account name must match your signup name: <strong>{userFullName}</strong>
+            </p>
           </div>
+        </div>
+
+        {/* Payment Account Name Field */}
+        <div className="mb-4">
+          <FloatingInput
+            label="Name on Payment Account"
+            icon={<User className="w-5 h-5" />}
+            value={paymentAccountName}
+            onChange={(e) => setPaymentAccountName(e.target.value)}
+            required
+            placeholder="Enter the exact name on your payment account"
+            disabled={uploading || uploadComplete}
+          />
         </div>
 
         <div className="space-y-4">
