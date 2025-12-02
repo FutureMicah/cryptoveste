@@ -14,6 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_interviews: {
+        Row: {
+          compliance_approved: boolean | null
+          created_at: string | null
+          duration_minutes: number | null
+          id: string
+          meeting_link: string | null
+          notes: string | null
+          scheduled_at: string
+          scheduled_by: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          compliance_approved?: boolean | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          scheduled_at: string
+          scheduled_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          compliance_approved?: boolean | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          scheduled_at?: string
+          scheduled_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      crypto_payments: {
+        Row: {
+          confirmations: number | null
+          created_at: string | null
+          cryptocurrency: string
+          expected_amount: number
+          id: string
+          network: string | null
+          payment_id: string | null
+          status: string | null
+          transaction_hash: string | null
+          updated_at: string | null
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          confirmations?: number | null
+          created_at?: string | null
+          cryptocurrency: string
+          expected_amount: number
+          id?: string
+          network?: string | null
+          payment_id?: string | null
+          status?: string | null
+          transaction_hash?: string | null
+          updated_at?: string | null
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          confirmations?: number | null
+          created_at?: string | null
+          cryptocurrency?: string
+          expected_amount?: number
+          id?: string
+          network?: string | null
+          payment_id?: string | null
+          status?: string | null
+          transaction_hash?: string | null
+          updated_at?: string | null
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_payments_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_uploads: {
         Row: {
           created_at: string | null
@@ -55,6 +150,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      investor_kyc_documents: {
+        Row: {
+          created_at: string | null
+          document_id: string | null
+          document_type: string
+          id: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          document_id?: string | null
+          document_type: string
+          id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          document_id?: string | null
+          document_type?: string
+          id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_kyc_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_proofs: {
         Row: {
@@ -131,6 +273,7 @@ export type Database = {
           created_at: string | null
           currency: string | null
           id: string
+          payment_provider: string | null
           payment_type: string
           reference: string | null
           referral_code_used: string | null
@@ -145,6 +288,7 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           id?: string
+          payment_provider?: string | null
           payment_type: string
           reference?: string | null
           referral_code_used?: string | null
@@ -159,6 +303,7 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           id?: string
+          payment_provider?: string | null
           payment_type?: string
           reference?: string | null
           referral_code_used?: string | null
@@ -221,9 +366,13 @@ export type Database = {
       }
       profiles: {
         Row: {
+          country_code: string | null
           created_at: string | null
+          detected_country: string | null
           first_name: string | null
+          geo_zone: string | null
           id: string
+          ip_address: string | null
           is_vip: boolean | null
           last_name: string | null
           referral_code: string
@@ -231,11 +380,16 @@ export type Database = {
           total_earnings: number | null
           updated_at: string | null
           username: string | null
+          vpn_detected: boolean | null
         }
         Insert: {
+          country_code?: string | null
           created_at?: string | null
+          detected_country?: string | null
           first_name?: string | null
+          geo_zone?: string | null
           id: string
+          ip_address?: string | null
           is_vip?: boolean | null
           last_name?: string | null
           referral_code: string
@@ -243,11 +397,16 @@ export type Database = {
           total_earnings?: number | null
           updated_at?: string | null
           username?: string | null
+          vpn_detected?: boolean | null
         }
         Update: {
+          country_code?: string | null
           created_at?: string | null
+          detected_country?: string | null
           first_name?: string | null
+          geo_zone?: string | null
           id?: string
+          ip_address?: string | null
           is_vip?: boolean | null
           last_name?: string | null
           referral_code?: string
@@ -255,6 +414,7 @@ export type Database = {
           total_earnings?: number | null
           updated_at?: string | null
           username?: string | null
+          vpn_detected?: boolean | null
         }
         Relationships: []
       }

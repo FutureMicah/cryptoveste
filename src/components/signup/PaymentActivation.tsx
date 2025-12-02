@@ -6,6 +6,7 @@ import { usePaystackPayment } from "react-paystack";
 import { toast } from "sonner";
 import { PaymentScreenshotUpload } from "./PaymentScreenshotUpload";
 import { PaymentVerificationSuccess } from "./PaymentVerificationSuccess";
+import CryptoPayment from "./CryptoPayment";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PaymentActivationProps {
@@ -19,6 +20,7 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
   const [isProcessing, setIsProcessing] = useState(false);
   const [showScreenshotUpload, setShowScreenshotUpload] = useState(false);
   const [showVerificationSuccess, setShowVerificationSuccess] = useState(false);
+  const [showCryptoPayment, setShowCryptoPayment] = useState(false);
 
   const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "";
 
@@ -53,8 +55,14 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
   };
 
   const handleCryptoPayment = () => {
-    toast.info("Crypto payment integration coming soon");
-    // This would open the crypto invoice widget
+    setShowCryptoPayment(true);
+  };
+
+  const handleSkrillPayment = () => {
+    toast.info("Skrill Payment", {
+      description: "You will be redirected to Skrill to complete your payment.",
+    });
+    // Integration with Skrill would go here
   };
 
   const paymentMethods = [
@@ -70,23 +78,31 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
       id: "flutterwave",
       name: "Flutterwave",
       icon: <Wallet className="w-6 h-6" />,
-      description: "Pay with Flutterwave",
+      description: "Pay with Flutterwave (Africa)",
       available: countryInfo?.paymentMethods?.includes("flutterwave"),
       handler: () => toast.info("Flutterwave integration coming soon"),
+    },
+    {
+      id: "skrill",
+      name: "Skrill",
+      icon: <Wallet className="w-6 h-6" />,
+      description: "International payments via Skrill",
+      available: countryInfo?.paymentMethods?.includes("skrill"),
+      handler: handleSkrillPayment,
     },
     {
       id: "bank",
       name: "Bank Transfer",
       icon: <Building2 className="w-6 h-6" />,
-      description: "Direct bank transfer",
-      available: countryInfo?.paymentMethods?.includes("bank"),
+      description: "Direct bank transfer (Nigeria only)",
+      available: countryInfo?.paymentMethods?.includes("bank_transfer"),
       handler: () => toast.info("Bank transfer details will be provided"),
     },
     {
       id: "crypto",
       name: "Cryptocurrency",
       icon: <Bitcoin className="w-6 h-6" />,
-      description: "USDT, BTC, ETH",
+      description: "USDT, BTC, ETH, USDC",
       available: countryInfo?.paymentMethods?.includes("crypto"),
       handler: handleCryptoPayment,
     },
@@ -198,8 +214,14 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
           ))}
         </div>
 
-        {/* Proceed Button */}
-        {!showScreenshotUpload ? (
+        {/* Proceed Button or Payment UI */}
+        {showCryptoPayment ? (
+          <CryptoPayment
+            amount={countryInfo.fee}
+            currency={countryInfo.currency}
+            onComplete={() => setShowVerificationSuccess(true)}
+          />
+        ) : !showScreenshotUpload ? (
           <Button
             onClick={() => {
               const method = paymentMethods.find(m => m.id === selectedMethod);
