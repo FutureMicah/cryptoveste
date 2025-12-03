@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Globe, AlertTriangle, CheckCircle, Shield } from "lucide-react";
+import { Globe, AlertTriangle, Shield, MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import VerificationCheckmark from "./VerificationCheckmark";
 
 export interface CountryInfo {
   country: string;
@@ -14,6 +15,9 @@ export interface CountryInfo {
   paymentMethods: string[];
   ipAddress: string;
   vpnDetected: boolean;
+  city?: string;
+  region?: string;
+  isp?: string;
 }
 
 interface EnhancedGeoDetectorProps {
@@ -21,41 +25,85 @@ interface EnhancedGeoDetectorProps {
   blockVPN?: boolean;
 }
 
+// Multiple geo services for reliability
+const GEO_SERVICES = [
+  { url: "https://ipapi.co/json/", parser: (d: any) => ({ 
+    country: d.country_name, 
+    countryCode: d.country_code, 
+    ip: d.ip, 
+    city: d.city, 
+    region: d.region,
+    isp: d.org 
+  })},
+  { url: "https://ipwho.is/", parser: (d: any) => ({ 
+    country: d.country, 
+    countryCode: d.country_code, 
+    ip: d.ip, 
+    city: d.city, 
+    region: d.region,
+    isp: d.connection?.isp 
+  })},
+  { url: "https://ip-api.com/json/?fields=status,country,countryCode,city,region,isp,query", parser: (d: any) => ({ 
+    country: d.country, 
+    countryCode: d.countryCode, 
+    ip: d.query, 
+    city: d.city, 
+    region: d.region,
+    isp: d.isp 
+  })},
+];
+
 const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeoDetectorProps) => {
   const [detecting, setDetecting] = useState(true);
   const [countryInfo, setCountryInfo] = useState<CountryInfo | null>(null);
   const [vpnBlocked, setVpnBlocked] = useState(false);
+  const [detectionPhase, setDetectionPhase] = useState<"locating" | "verifying" | "complete">("locating");
 
   useEffect(() => {
     detectCountryAndVPN();
   }, []);
 
   const detectCountryAndVPN = async () => {
+    setDetectionPhase("locating");
+    
     try {
-      // Use multiple IP geolocation services for VPN detection
-      const [ipApiResponse, vpnApiResponse] = await Promise.allSettled([
-        fetch("https://ipapi.co/json/"),
-        fetch("https://vpnapi.io/api/", {
-          headers: { 'Accept': 'application/json' }
-        })
-      ]);
-
-      let ipData: any = null;
-      let vpnData: any = null;
-
-      if (ipApiResponse.status === 'fulfilled') {
-        ipData = await ipApiResponse.value.json();
+      // Try multiple geo services for reliability
+      let geoData: any = null;
+      
+      for (const service of GEO_SERVICES) {
+        try {
+          const response = await fetch(service.url, { 
+            signal: AbortSignal.timeout(5000) 
+          });
+          if (response.ok) {
+            const data = await response.json();
+            geoData = service.parser(data);
+            if (geoData.countryCode) break;
+          }
+        } catch {
+          continue;
+        }
       }
 
-      if (vpnApiResponse.status === 'fulfilled') {
-        vpnData = await vpnApiResponse.value.json();
+      setDetectionPhase("verifying");
+      
+      // Check for VPN/Proxy using multiple indicators
+      let isVPN = false;
+      
+      try {
+        // Check vpnapi.io for VPN detection
+        const vpnResponse = await fetch(`https://vpnapi.io/api/${geoData?.ip}`, {
+          signal: AbortSignal.timeout(3000)
+        });
+        if (vpnResponse.ok) {
+          const vpnData = await vpnResponse.json();
+          isVPN = vpnData?.security?.vpn === true || 
+                  vpnData?.security?.proxy === true ||
+                  vpnData?.security?.tor === true;
+        }
+      } catch {
+        // VPN check failed, continue without it
       }
-
-      // Check for VPN/Proxy
-      const isVPN = vpnData?.security?.vpn === true || 
-                    vpnData?.security?.proxy === true ||
-                    ipData?.threat?.is_proxy === true ||
-                    ipData?.threat?.is_anonymous === true;
 
       if (isVPN && blockVPN) {
         setVpnBlocked(true);
@@ -67,9 +115,9 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
         return;
       }
 
-      const countryCode = ipData?.country_code || "NG";
-      const country = ipData?.country_name || "Nigeria";
-      const ipAddress = ipData?.ip || vpnData?.ip || "Unknown";
+      const countryCode = geoData?.countryCode || "NG";
+      const country = geoData?.country || "Nigeria";
+      const ipAddress = geoData?.ip || "Unknown";
 
       // Determine zone and pricing
       let zone: "nigeria" | "africa" | "international";
@@ -104,9 +152,17 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
         paymentMethods,
         ipAddress,
         vpnDetected: isVPN,
+        city: geoData?.city,
+        region: geoData?.region,
+        isp: geoData?.isp,
       };
 
+      setDetectionPhase("complete");
       setCountryInfo(info);
+      
+      // Small delay for visual effect
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       onCountryDetected(info);
 
       // Save geo data to profile
@@ -198,19 +254,33 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
   if (detecting) {
     return (
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="glass-card rounded-xl p-6"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card rounded-xl p-6 border border-border/50"
       >
         <div className="flex items-center gap-4">
-          <Globe className="w-8 h-8 text-primary animate-spin" />
-          <div>
-            <h3 className="text-lg font-bold text-foreground">
-              Detecting Your Location...
+          <div className="relative">
+            <Globe className="w-10 h-10 text-primary" />
+            <motion.div
+              className="absolute inset-0"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            >
+              <Loader2 className="w-10 h-10 text-primary/30" />
+            </motion.div>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-foreground mb-1">
+              {detectionPhase === "locating" ? "Detecting Your Location..." : "Verifying Connection..."}
             </h3>
-            <p className="text-sm text-muted-foreground">
-              Verifying region for pricing • Checking for VPN/Proxy
-            </p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <motion.div
+                className={`w-2 h-2 rounded-full ${detectionPhase === "locating" ? "bg-primary" : "bg-green-500"}`}
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 0.5, repeat: Infinity }}
+              />
+              <span>{detectionPhase === "locating" ? "Identifying region & IP" : "Checking VPN/Proxy"}</span>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -221,32 +291,52 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="glass-card rounded-xl p-6 border border-primary/30"
+      className="glass-card rounded-xl p-6 border border-green-500/30 bg-green-500/5"
     >
       <div className="flex items-start gap-4">
         <div className="flex-shrink-0">
           {countryInfo.flag.startsWith('http') ? (
-            <img src={countryInfo.flag} alt="" className="w-10 h-7 rounded shadow" />
+            <motion.img 
+              src={countryInfo.flag} 
+              alt="" 
+              className="w-12 h-8 rounded shadow-lg"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200 }}
+            />
           ) : (
-            <div className="text-3xl">{countryInfo.flag}</div>
+            <div className="text-4xl">{countryInfo.flag}</div>
           )}
         </div>
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckCircle className="w-5 h-5 text-green-500" />
+          <div className="flex items-center gap-3 mb-2">
+            <VerificationCheckmark size="sm" playSound={true} />
             <h3 className="text-lg font-bold text-foreground">
               {countryInfo.country}
             </h3>
           </div>
-          <div className="space-y-1 text-sm">
-            <p className="text-muted-foreground">
-              <span className="font-medium">Zone:</span> {countryInfo.zone.toUpperCase()}
-            </p>
-            <p className="text-primary font-bold text-lg">
+          <div className="space-y-2 text-sm">
+            {countryInfo.city && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <MapPin className="w-4 h-4" />
+                <span>{countryInfo.city}{countryInfo.region ? `, ${countryInfo.region}` : ''}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">
+                Zone: <span className="text-foreground font-medium">{countryInfo.zone.toUpperCase()}</span>
+              </span>
+            </div>
+            <motion.p 
+              className="text-primary font-bold text-xl"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
               Enrollment Fee: {countryInfo.currency}{countryInfo.fee.toLocaleString()}
-            </p>
+            </motion.p>
             {countryInfo.vpnDetected && (
               <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500">
                 <Shield className="w-4 h-4" />
