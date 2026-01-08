@@ -7,17 +7,27 @@ interface PaymentVerificationSuccessProps {
   onComplete?: () => void;
   title?: string;
   message?: string;
+  userName?: string;
 }
 
 const TELEGRAM_GROUP = "https://t.me/+J0p7oeR8r4k3Yjg0";
 const TELEGRAM_CHANNEL = "https://t.me/BLACKTRADEACADEMYfreechannel";
 const SUPPORT_USERNAME = "@Futuremicah";
 
+const ONBOARDING_STEPS = [
+  { step: 1, text: "Join the Private Trading Group", icon: "📱" },
+  { step: 2, text: "Complete your profile setup", icon: "👤" },
+  { step: 3, text: "Attend the next live session", icon: "🎯" },
+  { step: 4, text: "Start your trading journey", icon: "🚀" },
+];
+
 export const PaymentVerificationSuccess = ({
   onComplete,
   title = "Payment Verified!",
   message = "Your payment has been confirmed. Welcome to BlackPAL!",
+  userName,
 }: PaymentVerificationSuccessProps) => {
+  const displayName = userName || "Ascendant";
 
   useEffect(() => {
     // Auto complete after longer delay to allow user to see links
@@ -53,29 +63,53 @@ export const PaymentVerificationSuccess = ({
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="text-3xl md:text-4xl font-bold text-white mb-3"
+          className="text-2xl md:text-3xl font-bold text-white mb-2"
           style={{
             textShadow: "0 0 20px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.3)",
           }}
         >
-          {title}
+          Welcome, {displayName}! 🎉
         </motion.h2>
 
         <motion.p
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="text-lg text-white/80 mb-6"
+          className="text-lg text-white/80 mb-4"
         >
-          {message}
+          {title} {message}
         </motion.p>
+
+        {/* Onboarding Steps */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          className="bg-white/5 rounded-xl p-4 mb-5 border border-white/10"
+        >
+          <p className="text-sm text-white/70 mb-3 font-medium">Your Next Steps:</p>
+          <div className="space-y-2">
+            {ONBOARDING_STEPS.map((item, index) => (
+              <motion.div
+                key={item.step}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1 + index * 0.1 }}
+                className="flex items-center gap-3 text-sm text-white/80"
+              >
+                <span className="text-lg">{item.icon}</span>
+                <span>{item.text}</span>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
 
         {/* Telegram Links */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1 }}
-          className="space-y-3 mb-6"
+          transition={{ delay: 1.4 }}
+          className="space-y-3 mb-5"
         >
           <a
             href={TELEGRAM_GROUP}
@@ -87,7 +121,7 @@ export const PaymentVerificationSuccess = ({
             }}
           >
             <MessageCircle className="w-5 h-5" />
-            Join Private Trading Group
+            📱 Join Private Trading Group
             <ExternalLink className="w-4 h-4" />
           </a>
 
@@ -98,7 +132,7 @@ export const PaymentVerificationSuccess = ({
             className="flex items-center justify-center gap-3 w-full py-3 px-6 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl border border-white/20 transition-all duration-300"
           >
             <MessageCircle className="w-5 h-5" />
-            Follow Free Channel
+            📢 Follow Free Channel
             <ExternalLink className="w-4 h-4" />
           </a>
         </motion.div>
