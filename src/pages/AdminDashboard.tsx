@@ -109,11 +109,19 @@ const AdminDashboard = () => {
         updates.rejection_reason = reason;
       }
 
+      const { data: { user } } = await supabase.auth.getUser();
+      
       if (action === "approve") {
-        const { data: { user } } = await supabase.auth.getUser();
         updates.verified_by = user?.id;
         updates.verified_at = new Date().toISOString();
       }
+
+      // Get the payment proof to find the user
+      const { data: proofData } = await supabase
+        .from("payment_proofs")
+        .select("user_id, payment_id")
+        .eq("id", proofId)
+        .single();
 
       const { error } = await supabase
         .from("payment_proofs")
@@ -122,7 +130,36 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      toast.success(`Payment ${action}d successfully`);
+      // If approved, update the main payment status and send welcome email
+      if (action === "approve" && proofData?.payment_id) {
+        await supabase
+          .from("payments")
+          .update({ status: "completed" })
+          .eq("id", proofData.payment_id);
+
+        // Send welcome email with group links
+        if (proofData?.user_id) {
+          try {
+            await supabase.functions.invoke("send-notification", {
+              body: {
+                userId: proofData.user_id,
+                type: "payment_approved",
+                data: {
+                  paymentMethod: "Manual Verification",
+                  amount: "Enrollment",
+                },
+              },
+            });
+            toast.success("Payment approved and welcome email sent!");
+          } catch (emailError) {
+            console.error("Email send error:", emailError);
+            toast.success("Payment approved (email notification failed)");
+          }
+        }
+      } else {
+        toast.success(`Payment ${action}d successfully`);
+      }
+
       loadDashboardData();
     } catch (error: any) {
       toast.error(error.message || `Failed to ${action} payment`);

@@ -9,7 +9,7 @@ export interface CountryInfo {
   country: string;
   countryCode: string;
   flag: string;
-  zone: "nigeria" | "africa" | "international";
+  zone: "nigeria" | "international";
   fee: number;
   currency: string;
   paymentMethods: string[];
@@ -115,12 +115,12 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
         return;
       }
 
-      const countryCode = geoData?.countryCode || "NG";
-      const country = geoData?.country || "Nigeria";
+      const countryCode = geoData?.countryCode || "XX";
+      const country = geoData?.country || "International";
       const ipAddress = geoData?.ip || "Unknown";
 
-      // Determine zone and pricing
-      let zone: "nigeria" | "africa" | "international";
+      // Simplified zone detection: Nigeria = Naira, Everyone else = $50 USDT or Telegram Stars
+      let zone: "nigeria" | "international";
       let fee: number;
       let currency: string;
       let paymentMethods: string[];
@@ -129,17 +129,12 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
         zone = "nigeria";
         fee = 25000;
         currency = "₦";
-        paymentMethods = ["paystack", "bank_transfer", "crypto"];
-      } else if (isAfricanCountry(countryCode)) {
-        zone = "africa";
-        fee = 100;
-        currency = "$";
-        paymentMethods = ["flutterwave", "crypto", "skrill"];
+        paymentMethods = ["paystack"]; // Only Paystack for Nigerians
       } else {
         zone = "international";
-        fee = 200;
+        fee = 50;
         currency = "$";
-        paymentMethods = ["crypto", "skrill"];
+        paymentMethods = ["crypto", "telegram_stars"]; // USDT or Telegram Stars for non-Nigerians
       }
 
       const info: CountryInfo = {
@@ -180,7 +175,7 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
           .eq("id", user.data.user.id);
       }
 
-      toast.success(`${zone.toUpperCase()} Zone Activated`, {
+      toast.success(`${zone === "nigeria" ? "Nigeria" : "International"} Zone Activated`, {
         description: `Fee: ${currency}${fee.toLocaleString()}`,
       });
 
@@ -195,9 +190,9 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
         countryCode: "XX",
         flag: "🌍",
         zone: "international",
-        fee: 200,
+        fee: 50,
         currency: "$",
-        paymentMethods: ["crypto", "skrill"],
+        paymentMethods: ["crypto", "telegram_stars"],
         ipAddress: "Unknown",
         vpnDetected: false,
       };
@@ -206,17 +201,6 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
       onCountryDetected(defaultInfo);
       setDetecting(false);
     }
-  };
-
-  const isAfricanCountry = (code: string): boolean => {
-    const africanCountries = [
-      "DZ", "AO", "BJ", "BW", "BF", "BI", "CM", "CV", "CF", "TD", "KM", "CG",
-      "CD", "CI", "DJ", "EG", "GQ", "ER", "ET", "GA", "GM", "GH", "GN", "GW",
-      "KE", "LS", "LR", "LY", "MG", "MW", "ML", "MR", "MU", "YT", "MA", "MZ",
-      "NA", "NE", "NG", "RE", "RW", "SH", "ST", "SN", "SC", "SL", "SO", "ZA",
-      "SS", "SD", "SZ", "TZ", "TG", "TN", "UG", "EH", "ZM", "ZW"
-    ];
-    return africanCountries.includes(code);
   };
 
   if (vpnBlocked) {
@@ -326,7 +310,7 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
             )}
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">
-                Zone: <span className="text-foreground font-medium">{countryInfo.zone.toUpperCase()}</span>
+                Zone: <span className="text-foreground font-medium">{countryInfo.zone === "nigeria" ? "NIGERIA" : "INTERNATIONAL"}</span>
               </span>
             </div>
             <motion.p 
@@ -337,6 +321,11 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
             >
               Enrollment Fee: {countryInfo.currency}{countryInfo.fee.toLocaleString()}
             </motion.p>
+            {countryInfo.zone === "international" && (
+              <p className="text-xs text-muted-foreground">
+                💎 Pay with USDT (BEP20) or Telegram Stars
+              </p>
+            )}
             {countryInfo.vpnDetected && (
               <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500">
                 <Shield className="w-4 h-4" />
