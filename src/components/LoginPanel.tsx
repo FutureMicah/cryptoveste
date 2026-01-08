@@ -9,6 +9,13 @@ import DynamicGreeting from "./DynamicGreeting";
 import MotivationalQuotes from "./MotivationalQuotes";
 import { usePaystackPayment } from "react-paystack";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Validation schemas
+const loginSchema = z.object({
+  email: z.string().trim().email("Please enter a valid email address").max(255),
+  password: z.string().min(6, "Password must be at least 6 characters").max(128),
+});
 
 const LoginPanel = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -16,17 +23,56 @@ const LoginPanel = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{ email?: string; password?: string }>({});
   const { referralCode, hasDiscount, userReferralCode, processPayment, getReferralLink, getReferralStats } = useReferral();
+
+  const validateForm = (): boolean => {
+    const result = loginSchema.safeParse({ email, password });
+    if (!result.success) {
+      const errors: { email?: string; password?: string } = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0] === "email") errors.email = err.message;
+        if (err.path[0] === "password") errors.password = err.message;
+      });
+      setValidationErrors(errors);
+      return false;
+    }
+    setValidationErrors({});
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!validateForm()) return;
+    
     if (isLogin) {
       setIsLoading(true);
-      setTimeout(() => {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+        
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            toast.error("Invalid email or password. Please try again.");
+          } else if (error.message.includes("Email not confirmed")) {
+            toast.error("Please verify your email before logging in.");
+          } else {
+            toast.error(error.message);
+          }
+          return;
+        }
+        
+        if (data.user) {
+          toast.success("Access Granted. Welcome back, Ascendant.");
+        }
+      } catch (error: any) {
+        toast.error("Login failed. Please try again.");
+      } finally {
         setIsLoading(false);
-        toast.success("Access Granted. Welcome back, Ascendant.");
-      }, 1500);
+      }
     } else {
       setShowPayment(true);
     }
@@ -99,7 +145,6 @@ const LoginPanel = () => {
 
       if (error) throw error;
     } catch (error: any) {
-      console.error("Google sign-in error:", error);
       toast.error(error.message || "Google sign-in failed. Please try again.");
     }
   };
