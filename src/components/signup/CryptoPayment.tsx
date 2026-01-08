@@ -12,27 +12,13 @@ interface CryptoPaymentProps {
   onComplete: () => void;
 }
 
-const CRYPTO_WALLETS = {
-  USDT_TRC20: "TYourWalletAddressHere123456789",
-  USDT_ERC20: "0xYourEthereumAddressHere123456789",
-  BTC: "bc1YourBitcoinAddressHere123456789",
-  ETH: "0xYourEthereumAddressHere123456789",
-  USDC: "0xYourUSDCAddressHere123456789",
-};
+// Official wallet address for USDT payments
+const USDT_BEP20_ADDRESS = "0x37e39CcC88bfcD0a78087DD1188619530C355a95";
 
 const CryptoPayment = ({ amount, currency, onComplete }: CryptoPaymentProps) => {
-  const [selectedCrypto, setSelectedCrypto] = useState<keyof typeof CRYPTO_WALLETS | null>(null);
   const [transactionHash, setTransactionHash] = useState("");
   const [senderWallet, setSenderWallet] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  const cryptoOptions = [
-    { id: "USDT_TRC20", name: "USDT (TRC-20)", icon: "₮", network: "Tron", fee: "Low" },
-    { id: "USDT_ERC20", name: "USDT (ERC-20)", icon: "₮", network: "Ethereum", fee: "High" },
-    { id: "BTC", name: "Bitcoin", icon: "₿", network: "Bitcoin", fee: "Medium" },
-    { id: "ETH", name: "Ethereum", icon: "Ξ", network: "Ethereum", fee: "High" },
-    { id: "USDC", name: "USD Coin", icon: "$", network: "Ethereum", fee: "High" },
-  ];
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -40,7 +26,7 @@ const CryptoPayment = ({ amount, currency, onComplete }: CryptoPaymentProps) => 
   };
 
   const handleSubmit = async () => {
-    if (!selectedCrypto || !transactionHash || !senderWallet) {
+    if (!transactionHash || !senderWallet) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -56,8 +42,8 @@ const CryptoPayment = ({ amount, currency, onComplete }: CryptoPaymentProps) => 
         .from("payments")
         .insert({
           user_id: user.data.user.id,
-          amount: amount,
-          currency: currency,
+          amount: 50, // Fixed $50 USDT
+          currency: "USDT",
           payment_type: "enrollment",
           payment_provider: "crypto",
           status: "pending",
@@ -74,11 +60,11 @@ const CryptoPayment = ({ amount, currency, onComplete }: CryptoPaymentProps) => 
         .insert({
           user_id: user.data.user.id,
           payment_id: paymentData.id,
-          cryptocurrency: selectedCrypto,
+          cryptocurrency: "USDT_BEP20",
           wallet_address: senderWallet,
-          expected_amount: amount,
+          expected_amount: 50,
           transaction_hash: transactionHash,
-          network: cryptoOptions.find(c => c.id === selectedCrypto)?.network,
+          network: "BEP20",
           status: "pending",
         });
 
@@ -107,102 +93,76 @@ const CryptoPayment = ({ amount, currency, onComplete }: CryptoPaymentProps) => 
         <div className="flex items-center gap-3 mb-4">
           <Bitcoin className="w-6 h-6 text-primary" />
           <h3 className="text-lg font-bold text-foreground">
-            Cryptocurrency Payment
+            USDT Payment (BEP20)
           </h3>
         </div>
 
         <p className="text-sm text-muted-foreground mb-6">
-          Send exactly <strong className="text-foreground">{currency}{amount}</strong> equivalent in crypto to complete your payment
+          Send exactly <strong className="text-foreground text-lg">$50 USDT</strong> to complete your enrollment
         </p>
 
-        {/* Crypto Selection */}
-        <div className="space-y-3 mb-6">
-          <label className="text-sm font-medium text-foreground">
-            Select Cryptocurrency
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {cryptoOptions.map((crypto) => (
-              <button
-                key={crypto.id}
-                onClick={() => setSelectedCrypto(crypto.id as keyof typeof CRYPTO_WALLETS)}
-                className={`p-4 rounded-lg border-2 text-left transition-all ${
-                  selectedCrypto === crypto.id
-                    ? "border-primary bg-primary/10"
-                    : "border-border/50 hover:border-primary/50"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{crypto.icon}</span>
-                    <span className="font-medium text-foreground">{crypto.name}</span>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <div>Network: {crypto.network}</div>
-                  <div>Fee: {crypto.fee}</div>
-                </div>
-              </button>
-            ))}
+        {/* Network Info */}
+        <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-semibold text-primary uppercase">Network</span>
           </div>
+          <p className="text-foreground font-bold">BEP20 (Binance Smart Chain)</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            ⚠️ Only send USDT on BEP20 network. Other networks will result in lost funds.
+          </p>
         </div>
 
         {/* Wallet Address Display */}
-        {selectedCrypto && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            className="space-y-4"
-          >
-            <div className="bg-background/50 rounded-lg p-4 border border-border/50">
-              <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                Send to this address:
-              </label>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-sm font-mono bg-muted/30 p-3 rounded break-all">
-                  {CRYPTO_WALLETS[selectedCrypto]}
-                </code>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => copyToClipboard(CRYPTO_WALLETS[selectedCrypto])}
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Transaction Details */}
-            <FloatingInput
-              label="Your Wallet Address"
-              icon={<Wallet className="w-5 h-5" />}
-              value={senderWallet}
-              onChange={(e) => setSenderWallet(e.target.value)}
-              placeholder="Enter your wallet address"
-              required
-            />
-
-            <FloatingInput
-              label="Transaction Hash / TX ID"
-              icon={<CheckCircle2 className="w-5 h-5" />}
-              value={transactionHash}
-              onChange={(e) => setTransactionHash(e.target.value)}
-              placeholder="Enter transaction hash after sending"
-              required
-            />
-
+        <div className="bg-background/50 rounded-lg p-4 border border-border/50 mb-6">
+          <label className="text-sm font-medium text-muted-foreground mb-2 block">
+            Send USDT to this address:
+          </label>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-sm font-mono bg-muted/30 p-3 rounded break-all text-foreground">
+              {USDT_BEP20_ADDRESS}
+            </code>
             <Button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="w-full h-12"
+              size="sm"
+              variant="outline"
+              onClick={() => copyToClipboard(USDT_BEP20_ADDRESS)}
             >
-              {submitting ? "Submitting..." : "Submit Payment"}
+              <Copy className="w-4 h-4" />
             </Button>
+          </div>
+        </div>
 
-            <p className="text-xs text-muted-foreground text-center">
-              ⚠️ Please wait for blockchain confirmations. Verification may take 10-30 minutes.
-            </p>
-          </motion.div>
-        )}
+        {/* Transaction Details */}
+        <div className="space-y-4">
+          <FloatingInput
+            label="Your Wallet Address"
+            icon={<Wallet className="w-5 h-5" />}
+            value={senderWallet}
+            onChange={(e) => setSenderWallet(e.target.value)}
+            placeholder="Enter your wallet address"
+            required
+          />
+
+          <FloatingInput
+            label="Transaction Hash / TX ID"
+            icon={<CheckCircle2 className="w-5 h-5" />}
+            value={transactionHash}
+            onChange={(e) => setTransactionHash(e.target.value)}
+            placeholder="Enter transaction hash after sending"
+            required
+          />
+
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="w-full h-12"
+          >
+            {submitting ? "Submitting..." : "Submit Payment"}
+          </Button>
+
+          <p className="text-xs text-muted-foreground text-center">
+            ⚠️ Please wait for blockchain confirmations. Verification may take 10-30 minutes.
+          </p>
+        </div>
       </div>
     </motion.div>
   );
