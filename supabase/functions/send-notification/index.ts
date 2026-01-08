@@ -15,6 +15,10 @@ interface NotificationRequest {
   data: Record<string, any>;
 }
 
+const TELEGRAM_GROUP = "https://t.me/+J0p7oeR8r4k3Yjg0";
+const TELEGRAM_CHANNEL = "https://t.me/BLACKTRADEACADEMYfreechannel";
+const SUPPORT_USERNAME = "@Futuremicah";
+
 const EMAIL_TEMPLATES = {
   payment_approved: (data: any) => ({
     subject: "🎉 Payment Confirmed - Welcome to BlackPAL!",
@@ -34,7 +38,11 @@ const EMAIL_TEMPLATES = {
           .detail-label { color: #888; }
           .detail-value { color: #fff; font-weight: 500; }
           .footer { text-align: center; margin-top: 40px; color: #666; font-size: 14px; }
-          .cta { display: inline-block; background: linear-gradient(135deg, #D4AF37, #B8860B); color: #000; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+          .cta { display: inline-block; background: linear-gradient(135deg, #D4AF37, #B8860B); color: #000; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 10px 5px; }
+          .telegram-btn { display: inline-block; background: linear-gradient(135deg, #0088cc, #0066aa); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 10px 5px; }
+          .telegram-section { background: #1a1a2e; border-radius: 12px; padding: 24px; margin: 24px 0; border: 1px solid #2d2d44; }
+          .support { color: #888; font-size: 14px; margin-top: 16px; }
+          .support a { color: #0088cc; text-decoration: none; }
         </style>
       </head>
       <body>
@@ -45,7 +53,7 @@ const EMAIL_TEMPLATES = {
           </div>
           <div class="content">
             <h2 style="text-align: center; margin-bottom: 24px;">Your payment has been confirmed!</h2>
-            <div class="amount">${data.cryptocurrency ? data.cryptocurrency : '$'}${data.amount}</div>
+            <div class="amount">${data.cryptocurrency ? data.cryptocurrency : '₦'}${data.amount}</div>
             ${data.transactionHash ? `
             <div class="detail">
               <span class="detail-label">Transaction ID</span>
@@ -56,9 +64,19 @@ const EMAIL_TEMPLATES = {
               <span class="detail-label">Status</span>
               <span class="detail-value" style="color: #10B981;">Completed</span>
             </div>
-            <div style="text-align: center; margin-top: 32px;">
-              <p>You now have full access to the BlackPAL platform. Start exploring your dashboard!</p>
-              <a href="https://blackpal.app/dashboard" class="cta">Go to Dashboard →</a>
+            
+            <div class="telegram-section">
+              <h3 style="text-align: center; margin: 0 0 16px 0; color: #fff;">🚀 Join Our Community</h3>
+              <p style="text-align: center; color: #aaa; margin-bottom: 20px;">Get instant access to exclusive trading signals and community support!</p>
+              <div style="text-align: center;">
+                <a href="${TELEGRAM_GROUP}" class="telegram-btn">📱 Join Private Trading Group</a>
+                <a href="${TELEGRAM_CHANNEL}" class="telegram-btn" style="background: linear-gradient(135deg, #555, #333);">📢 Follow Free Channel</a>
+              </div>
+              <p class="support">Need help? Contact our support: <a href="https://t.me/${SUPPORT_USERNAME.replace('@', '')}">${SUPPORT_USERNAME}</a></p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 24px;">
+              <p>You now have full access to the BlackPAL platform!</p>
             </div>
           </div>
           <div class="footer">
@@ -252,8 +270,9 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Notification error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
