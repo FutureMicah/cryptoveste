@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Bitcoin, Star } from "lucide-react";
+import { CreditCard, Bitcoin, Star, Globe } from "lucide-react";
 import { usePaystackPayment } from "react-paystack";
 import { toast } from "sonner";
 import { PaymentScreenshotUpload } from "./PaymentScreenshotUpload";
@@ -21,8 +21,7 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
   const [isProcessing, setIsProcessing] = useState(false);
   const [showScreenshotUpload, setShowScreenshotUpload] = useState(false);
   const [showVerificationSuccess, setShowVerificationSuccess] = useState(false);
-  const [showCryptoPayment, setShowCryptoPayment] = useState(false);
-  const [showStarsPayment, setShowStarsPayment] = useState(false);
+  const [activePaymentView, setActivePaymentView] = useState<"crypto" | "stars" | null>(null);
 
   const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "";
 
@@ -57,11 +56,11 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
   };
 
   const handleCryptoPayment = () => {
-    setShowCryptoPayment(true);
+    setActivePaymentView("crypto");
   };
 
   const handleStarsPayment = () => {
-    setShowStarsPayment(true);
+    setActivePaymentView("stars");
   };
 
   // Payment methods based on location
@@ -90,7 +89,7 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
         {
           id: "telegram_stars",
           name: "Telegram Stars",
-          icon: <Star className="w-6 h-6" />,
+          icon: <Star className="w-6 h-6 text-yellow-500" />,
           description: "Pay $50 via Telegram Stars",
           available: true,
           handler: handleStarsPayment,
@@ -137,13 +136,23 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm text-muted-foreground">Your Region</p>
+                <p className="text-sm text-muted-foreground">Your Location</p>
                 <p className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  {countryInfo?.flag && (
+                  {countryInfo?.flag && countryInfo.flag.startsWith('http') ? (
                     <img src={countryInfo.flag} alt="" className="w-6 h-4 rounded" />
+                  ) : (
+                    <Globe className="w-5 h-5 text-primary" />
                   )}
-                  {countryInfo?.country}
+                  {countryInfo?.country || "International"}
+                  {countryInfo?.countryCode && (
+                    <span className="text-xs text-muted-foreground">({countryInfo.countryCode})</span>
+                  )}
                 </p>
+                {countryInfo?.city && (
+                  <p className="text-xs text-muted-foreground">
+                    {countryInfo.city}{countryInfo.region ? `, ${countryInfo.region}` : ''}
+                  </p>
+                )}
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Enrollment Fee</p>
@@ -163,16 +172,36 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
           </motion.div>
 
           {/* Payment Methods */}
-          {showCryptoPayment ? (
-            <CryptoPayment
-              amount={50}
-              currency="USDT"
-              onComplete={() => setShowVerificationSuccess(true)}
-            />
-          ) : showStarsPayment ? (
-            <TelegramStarsPayment
-              onComplete={() => setShowVerificationSuccess(true)}
-            />
+          {activePaymentView === "crypto" ? (
+            <div className="space-y-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActivePaymentView(null)}
+                className="mb-2"
+              >
+                ← Back to payment options
+              </Button>
+              <CryptoPayment
+                amount={50}
+                currency="USDT"
+                onComplete={() => setShowVerificationSuccess(true)}
+              />
+            </div>
+          ) : activePaymentView === "stars" ? (
+            <div className="space-y-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActivePaymentView(null)}
+                className="mb-2"
+              >
+                ← Back to payment options
+              </Button>
+              <TelegramStarsPayment
+                onComplete={() => setShowVerificationSuccess(true)}
+              />
+            </div>
           ) : !showScreenshotUpload ? (
             <>
               <div className="space-y-4 mb-8">
@@ -189,6 +218,12 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
                     onClick={() => {
                       if (method.available) {
                         setSelectedMethod(method.id);
+                        // For non-Paystack methods, go directly to the payment view
+                        if (method.id === "crypto") {
+                          handleCryptoPayment();
+                        } else if (method.id === "telegram_stars") {
+                          handleStarsPayment();
+                        }
                       }
                     }}
                     disabled={!method.available}
@@ -213,20 +248,23 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
                 ))}
               </div>
 
-              <Button
-                onClick={() => {
-                  const method = paymentMethods.find(m => m.id === selectedMethod);
-                  if (method && method.available) {
-                    method.handler();
-                  } else {
-                    toast.error("Please select a payment method");
-                  }
-                }}
-                disabled={!selectedMethod || isProcessing}
-                className="w-full h-14 text-lg font-semibold"
-              >
-                {isProcessing ? "Processing..." : "Proceed to Payment"}
-              </Button>
+              {/* Only show "Proceed to Payment" for Paystack */}
+              {isNigeria && (
+                <Button
+                  onClick={() => {
+                    const method = paymentMethods.find(m => m.id === selectedMethod);
+                    if (method && method.available) {
+                      method.handler();
+                    } else {
+                      toast.error("Please select a payment method");
+                    }
+                  }}
+                  disabled={!selectedMethod || isProcessing}
+                  className="w-full h-14 text-lg font-semibold"
+                >
+                  {isProcessing ? "Processing..." : "Proceed to Payment"}
+                </Button>
+              )}
             </>
           ) : (
             <PaymentScreenshotUpload
