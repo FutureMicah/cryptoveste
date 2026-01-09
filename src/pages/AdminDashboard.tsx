@@ -4,99 +4,78 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { CheckCircle, XCircle, Clock, AlertCircle, LogOut } from "lucide-react";
+import { CheckCircle, XCircle, Clock, LogOut, Eye, MapPin, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import QuickStats from "@/components/admin/QuickStats";
+import AdminLogin from "@/components/admin/AdminLogin";
+import PaymentProofViewer from "@/components/admin/PaymentProofViewer";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [paymentProofs, setPaymentProofs] = useState<any[]>([]);
   const [kycDocuments, setKycDocuments] = useState<any[]>([]);
   const [interviews, setInterviews] = useState<any[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [viewingDocument, setViewingDocument] = useState<string | null>(null);
 
   useEffect(() => {
-    checkAdminAccess();
+    // Check if admin is already authenticated via session
+    const adminAuth = sessionStorage.getItem("adminAuth");
+    if (adminAuth === "true") {
+      setIsAuthenticated(true);
+      loadDashboardData();
+    }
+    setLoading(false);
   }, []);
 
-  const checkAdminAccess = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate("/");
-        return;
-      }
-
-      // Check if user has admin role
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-
-      const hasAdminRole = roles?.some(r => 
-        r.role === "admin" || r.role === "super_admin"
-      );
-
-      if (!hasAdminRole) {
-        toast.error("Access denied - Admin privileges required");
-        navigate("/");
-        return;
-      }
-
-      setIsAdmin(true);
-      loadDashboardData();
-    } catch (error) {
-      console.error("Admin check error:", error);
-      navigate("/");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadDashboardData = async () => {
-    // Load payment proofs
-    const { data: proofs } = await supabase
-      .from("payment_proofs")
-      .select(`
-        *,
-        profiles:user_id (first_name, last_name, email)
-      `)
-      .order("created_at", { ascending: false });
+    try {
+      // Load payment proofs with profile data including country
+      const { data: proofs } = await supabase
+        .from("payment_proofs")
+        .select(`
+          *,
+          profiles:user_id (first_name, last_name, detected_country, country_code),
+          documents:document_id (id, file_path, file_name)
+        `)
+        .order("created_at", { ascending: false });
 
-    setPaymentProofs(proofs || []);
+      setPaymentProofs(proofs || []);
 
-    // Load KYC documents
-    const { data: kyc } = await supabase
-      .from("investor_kyc_documents")
-      .select(`
-        *,
-        profiles:user_id (first_name, last_name, email)
-      `)
-      .order("created_at", { ascending: false });
+      // Load KYC documents
+      const { data: kyc } = await supabase
+        .from("investor_kyc_documents")
+        .select(`
+          *,
+          profiles:user_id (first_name, last_name, detected_country, country_code)
+        `)
+        .order("created_at", { ascending: false });
 
-    setKycDocuments(kyc || []);
+      setKycDocuments(kyc || []);
 
-    // Load interviews
-    const { data: interviewData } = await supabase
-      .from("admin_interviews")
-      .select(`
-        *,
-        profiles:user_id (first_name, last_name, email)
-      `)
-      .order("scheduled_at", { ascending: true });
+      // Load interviews
+      const { data: interviewData } = await supabase
+        .from("admin_interviews")
+        .select(`
+          *,
+          profiles:user_id (first_name, last_name, detected_country, country_code)
+        `)
+        .order("scheduled_at", { ascending: true });
 
-    setInterviews(interviewData || []);
+      setInterviews(interviewData || []);
 
-    // Load total users count
-    const { count } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true });
+      // Load total users count
+      const { count } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true });
 
-    setTotalUsers(count || 0);
+      setTotalUsers(count || 0);
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+    }
   };
 
   const handlePaymentAction = async (proofId: string, action: "approve" | "reject", reason?: string) => {
@@ -109,10 +88,7 @@ const AdminDashboard = () => {
         updates.rejection_reason = reason;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      
       if (action === "approve") {
-        updates.verified_by = user?.id;
         updates.verified_at = new Date().toISOString();
       }
 
@@ -177,8 +153,6 @@ const AdminDashboard = () => {
       }
 
       if (action === "approve") {
-        const { data: { user } } = await supabase.auth.getUser();
-        updates.reviewed_by = user?.id;
         updates.reviewed_at = new Date().toISOString();
       }
 
@@ -196,9 +170,16 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
+  const handleLogout = () => {
+    sessionStorage.removeItem("adminAuth");
+    sessionStorage.removeItem("adminEmail");
+    setIsAuthenticated(false);
+    toast.success("Logged out successfully");
+  };
+
+  const getCountryFlag = (countryCode: string) => {
+    if (!countryCode) return "🌍";
+    return `https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`;
   };
 
   if (loading) {
@@ -209,10 +190,24 @@ const AdminDashboard = () => {
     );
   }
 
-  if (!isAdmin) return null;
+  // Show login if not authenticated
+  if (!isAuthenticated) {
+    return <AdminLogin onSuccess={() => {
+      setIsAuthenticated(true);
+      loadDashboardData();
+    }} />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Document Viewer Modal */}
+      {viewingDocument && (
+        <PaymentProofViewer
+          documentId={viewingDocument}
+          onClose={() => setViewingDocument(null)}
+        />
+      )}
+
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -262,11 +257,26 @@ const AdminDashboard = () => {
                 >
                   <Card className="p-6">
                     <div className="flex items-start justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-foreground">
                             {proof.profiles?.first_name} {proof.profiles?.last_name}
                           </span>
+                          
+                          {/* Country Display */}
+                          {proof.profiles?.detected_country && (
+                            <span className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-blue-500/20 text-blue-700 dark:text-blue-400">
+                              {proof.profiles?.country_code && (
+                                <img 
+                                  src={getCountryFlag(proof.profiles.country_code)} 
+                                  alt="" 
+                                  className="w-4 h-3 rounded"
+                                />
+                              )}
+                              {proof.profiles.detected_country}
+                            </span>
+                          )}
+                          
                           <span className={`px-2 py-1 rounded text-xs ${
                             proof.status === "submitted" ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" :
                             proof.status === "approved" ? "bg-green-500/20 text-green-700 dark:text-green-400" :
@@ -293,29 +303,43 @@ const AdminDashboard = () => {
                         </p>
                       </div>
 
-                      {proof.status === "submitted" && (
-                        <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
+                        {/* View Screenshot Button */}
+                        {proof.document_id && (
                           <Button
                             size="sm"
-                            variant="default"
-                            onClick={() => handlePaymentAction(proof.id, "approve")}
+                            variant="outline"
+                            onClick={() => setViewingDocument(proof.document_id)}
                           >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Approve
+                            <Eye className="w-4 h-4 mr-1" />
+                            View Screenshot
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => {
-                              const reason = prompt("Enter rejection reason:");
-                              if (reason) handlePaymentAction(proof.id, "reject", reason);
-                            }}
-                          >
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Reject
-                          </Button>
-                        </div>
-                      )}
+                        )}
+                        
+                        {proof.status === "submitted" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => handlePaymentAction(proof.id, "approve")}
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                const reason = prompt("Enter rejection reason:");
+                                if (reason) handlePaymentAction(proof.id, "reject", reason);
+                              }}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </Card>
                 </motion.div>
@@ -339,10 +363,25 @@ const AdminDashboard = () => {
                   <Card className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-foreground">
                             {kyc.profiles?.first_name} {kyc.profiles?.last_name}
                           </span>
+                          
+                          {/* Country Display */}
+                          {kyc.profiles?.detected_country && (
+                            <span className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-blue-500/20 text-blue-700 dark:text-blue-400">
+                              {kyc.profiles?.country_code && (
+                                <img 
+                                  src={getCountryFlag(kyc.profiles.country_code)} 
+                                  alt="" 
+                                  className="w-4 h-3 rounded"
+                                />
+                              )}
+                              {kyc.profiles.detected_country}
+                            </span>
+                          )}
+                          
                           <span className={`px-2 py-1 rounded text-xs ${
                             kyc.status === "pending" ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" :
                             kyc.status === "approved" ? "bg-green-500/20 text-green-700 dark:text-green-400" :
@@ -404,11 +443,26 @@ const AdminDashboard = () => {
                 >
                   <Card className="p-6">
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Clock className="w-5 h-5 text-primary" />
                         <span className="font-bold text-foreground">
                           {interview.profiles?.first_name} {interview.profiles?.last_name}
                         </span>
+                        
+                        {/* Country Display */}
+                        {interview.profiles?.detected_country && (
+                          <span className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-blue-500/20 text-blue-700 dark:text-blue-400">
+                            {interview.profiles?.country_code && (
+                              <img 
+                                src={getCountryFlag(interview.profiles.country_code)} 
+                                alt="" 
+                                className="w-4 h-3 rounded"
+                              />
+                            )}
+                            {interview.profiles.detected_country}
+                          </span>
+                        )}
+                        
                         <span className={`px-2 py-1 rounded text-xs ${
                           interview.status === "scheduled" ? "bg-blue-500/20 text-blue-700 dark:text-blue-400" :
                           interview.status === "completed" ? "bg-green-500/20 text-green-700 dark:text-green-400" :
