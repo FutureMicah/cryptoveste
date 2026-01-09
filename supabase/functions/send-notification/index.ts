@@ -11,7 +11,7 @@ const corsHeaders = {
 
 interface NotificationRequest {
   userId: string;
-  type: "payment_approved" | "kyc_status" | "interview_scheduled" | "interview_confirmed";
+  type: "payment_approved" | "payment_rejected" | "kyc_status" | "interview_scheduled" | "interview_confirmed";
   data: Record<string, any>;
 }
 
@@ -78,6 +78,68 @@ const EMAIL_TEMPLATES = {
             <div style="text-align: center; margin-top: 24px;">
               <p>You now have full access to the BlackPAL platform!</p>
             </div>
+          </div>
+          <div class="footer">
+            <p>© 2024 BlackPAL. All rights reserved.</p>
+            <p style="color: #444;">This is an automated message. Please do not reply.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  }),
+
+  payment_rejected: (data: any) => ({
+    subject: "⚠️ Payment Verification Failed - Action Required",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #ffffff; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+          .header { text-align: center; margin-bottom: 40px; }
+          .logo { font-size: 32px; font-weight: bold; color: #D4AF37; }
+          .error-badge { background: linear-gradient(135deg, #EF4444, #DC2626); color: white; padding: 12px 24px; border-radius: 50px; display: inline-block; margin: 20px 0; font-weight: 600; }
+          .content { background: #111111; border-radius: 16px; padding: 32px; border: 1px solid #222; }
+          .reason-box { background: #1a0a0a; border: 1px solid #EF4444; border-radius: 12px; padding: 20px; margin: 20px 0; }
+          .reason-label { color: #EF4444; font-weight: 600; margin-bottom: 8px; }
+          .reason-text { color: #fff; }
+          .footer { text-align: center; margin-top: 40px; color: #666; font-size: 14px; }
+          .cta { display: inline-block; background: linear-gradient(135deg, #D4AF37, #B8860B); color: #000; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+          .support { color: #888; font-size: 14px; margin-top: 16px; }
+          .support a { color: #0088cc; text-decoration: none; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">BlackPAL</div>
+            <div class="error-badge">✗ Payment Not Verified</div>
+          </div>
+          <div class="content">
+            <h2 style="text-align: center; margin-bottom: 24px;">Your payment could not be verified</h2>
+            
+            <div class="reason-box">
+              <p class="reason-label">Rejection Reason:</p>
+              <p class="reason-text">${data.reason || "The payment proof provided could not be verified. Please submit a clearer screenshot."}</p>
+            </div>
+            
+            <div style="text-align: center;">
+              <p style="color: #aaa; margin-bottom: 20px;">Please resubmit your payment proof with the following:</p>
+              <ul style="text-align: left; color: #fff; margin: 20px 0; padding-left: 20px;">
+                <li>Clear, full-screen screenshot of payment confirmation</li>
+                <li>Transaction reference/ID visible</li>
+                <li>Date and amount visible</li>
+                <li>Sender name matching your registration</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://blackpal-ascend.lovable.app/signup" class="cta">Resubmit Payment Proof →</a>
+            </div>
+            
+            <p class="support">Need help? Contact our support: <a href="https://t.me/${SUPPORT_USERNAME.replace('@', '')}">${SUPPORT_USERNAME}</a></p>
           </div>
           <div class="footer">
             <p>© 2024 BlackPAL. All rights reserved.</p>
