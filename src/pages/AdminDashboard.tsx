@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { CheckCircle, XCircle, Clock, LogOut, Eye, RefreshCw, Users, DollarSign, Share2, LayoutDashboard } from "lucide-react";
+import { 
+  CheckCircle, XCircle, Clock, LogOut, Eye, RefreshCw, Users, 
+  DollarSign, Share2, LayoutDashboard, ArrowLeft, Calendar 
+} from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import QuickStats from "@/components/admin/QuickStats";
@@ -13,6 +16,8 @@ import PaymentProofViewer from "@/components/admin/PaymentProofViewer";
 import UsersManagement from "@/components/admin/UsersManagement";
 import PaymentsOverview from "@/components/admin/PaymentsOverview";
 import ReferralsManagement from "@/components/admin/ReferralsManagement";
+import InterviewScheduling from "@/components/admin/InterviewScheduling";
+import RealtimeNotifications from "@/components/admin/RealtimeNotifications";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -33,7 +38,7 @@ const AdminDashboard = () => {
     setLoading(false);
   }, []);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       const { data: proofs } = await supabase
         .from("payment_proofs")
@@ -74,7 +79,7 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error("Error loading dashboard data:", error);
     }
-  };
+  }, []);
 
   const handlePaymentAction = async (proofId: string, action: "approve" | "reject", reason?: string) => {
     try {
@@ -127,7 +132,6 @@ const AdminDashboard = () => {
             toast.success("Payment approved (email notification failed)");
           }
         } else if (action === "reject") {
-          // Send rejection email with reason
           try {
             await supabase.functions.invoke("send-notification", {
               body: {
@@ -179,7 +183,6 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      // Send KYC status notification
       if (kycData?.user_id) {
         try {
           await supabase.functions.invoke("send-notification", {
@@ -212,6 +215,10 @@ const AdminDashboard = () => {
     toast.success("Logged out successfully");
   };
 
+  const handleBackToHome = () => {
+    navigate("/");
+  };
+
   const getCountryFlag = (countryCode: string) => {
     if (!countryCode) return "🌍";
     return `https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`;
@@ -241,24 +248,41 @@ const AdminDashboard = () => {
         />
       )}
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage payments, users, KYC, and more</p>
+      <div className="w-full max-w-7xl mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleBackToHome}
+              className="gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Admin Dashboard</h1>
+              <p className="text-sm text-muted-foreground">Manage payments, users, KYC, and interviews</p>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={loadDashboardData}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <RealtimeNotifications 
+              onNewPaymentProof={loadDashboardData}
+              onNewUser={loadDashboardData}
+            />
+            <Button variant="outline" size="sm" onClick={loadDashboardData}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
-            <Button variant="outline" onClick={handleLogout}>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
           </div>
         </div>
 
+        {/* Quick Stats */}
         <QuickStats
           pendingPayments={paymentProofs.filter(p => p.status === "submitted").length}
           pendingKYC={kycDocuments.filter(k => k.status === "pending").length}
@@ -266,76 +290,106 @@ const AdminDashboard = () => {
           totalUsers={totalUsers}
         />
 
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview">
-              <LayoutDashboard className="w-4 h-4 mr-2" />
+        {/* Tabs */}
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+            <TabsTrigger value="overview" className="flex-1 min-w-[100px]">
+              <LayoutDashboard className="w-4 h-4 mr-1 hidden sm:inline" />
               Overview
             </TabsTrigger>
-            <TabsTrigger value="payments">
-              <DollarSign className="w-4 h-4 mr-2" />
+            <TabsTrigger value="payments" className="flex-1 min-w-[100px]">
+              <DollarSign className="w-4 h-4 mr-1 hidden sm:inline" />
               Verify ({paymentProofs.filter(p => p.status === "submitted").length})
             </TabsTrigger>
-            <TabsTrigger value="all-payments">
+            <TabsTrigger value="all-payments" className="flex-1 min-w-[100px]">
               Payments
             </TabsTrigger>
-            <TabsTrigger value="users">
-              <Users className="w-4 h-4 mr-2" />
+            <TabsTrigger value="users" className="flex-1 min-w-[80px]">
+              <Users className="w-4 h-4 mr-1 hidden sm:inline" />
               Users
             </TabsTrigger>
-            <TabsTrigger value="referrals">
-              <Share2 className="w-4 h-4 mr-2" />
+            <TabsTrigger value="referrals" className="flex-1 min-w-[80px]">
+              <Share2 className="w-4 h-4 mr-1 hidden sm:inline" />
               Referrals
             </TabsTrigger>
-            <TabsTrigger value="kyc">
+            <TabsTrigger value="interviews" className="flex-1 min-w-[100px]">
+              <Calendar className="w-4 h-4 mr-1 hidden sm:inline" />
+              Interviews
+            </TabsTrigger>
+            <TabsTrigger value="kyc" className="flex-1 min-w-[80px]">
               KYC ({kycDocuments.filter(k => k.status === "pending").length})
             </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card className="p-4 sm:p-6">
                 <h3 className="text-lg font-bold text-foreground mb-4">Recent Payment Proofs</h3>
-                {paymentProofs.slice(0, 5).map((proof) => (
-                  <div key={proof.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {proof.profiles?.first_name} {proof.profiles?.last_name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {proof.currency} {proof.amount?.toLocaleString()}
-                      </p>
+                <div className="space-y-2">
+                  {paymentProofs.slice(0, 5).map((proof) => (
+                    <div key={proof.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-foreground text-sm truncate">
+                            {proof.profiles?.first_name} {proof.profiles?.last_name}
+                          </p>
+                          {proof.profiles?.country_code && (
+                            <img 
+                              src={getCountryFlag(proof.profiles.country_code)} 
+                              alt={proof.profiles.detected_country} 
+                              className="w-4 h-3 rounded flex-shrink-0"
+                            />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {proof.currency} {proof.amount?.toLocaleString()}
+                        </p>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
+                        proof.status === "submitted" ? "bg-yellow-500/20 text-yellow-500" :
+                        proof.status === "approved" ? "bg-green-500/20 text-green-500" :
+                        "bg-red-500/20 text-red-500"
+                      }`}>
+                        {proof.status}
+                      </span>
                     </div>
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      proof.status === "submitted" ? "bg-yellow-500/20 text-yellow-500" :
-                      proof.status === "approved" ? "bg-green-500/20 text-green-500" :
-                      "bg-red-500/20 text-red-500"
-                    }`}>
-                      {proof.status}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                  {paymentProofs.length === 0 && (
+                    <p className="text-muted-foreground text-center py-4 text-sm">No payment proofs yet</p>
+                  )}
+                </div>
               </Card>
 
-              <Card className="p-6">
+              <Card className="p-4 sm:p-6">
                 <h3 className="text-lg font-bold text-foreground mb-4">Upcoming Interviews</h3>
-                {interviews.filter(i => i.status === "scheduled").slice(0, 5).map((interview) => (
-                  <div key={interview.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {interview.profiles?.first_name} {interview.profiles?.last_name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(interview.scheduled_at).toLocaleString()}
-                      </p>
+                <div className="space-y-2">
+                  {interviews.filter(i => i.status === "scheduled").slice(0, 5).map((interview) => (
+                    <div key={interview.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-foreground text-sm truncate">
+                            {interview.profiles?.first_name} {interview.profiles?.last_name}
+                          </p>
+                          {interview.profiles?.country_code && (
+                            <img 
+                              src={getCountryFlag(interview.profiles.country_code)} 
+                              alt="" 
+                              className="w-4 h-3 rounded flex-shrink-0"
+                            />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(interview.scheduled_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <Clock className="w-4 h-4 text-primary flex-shrink-0" />
                     </div>
-                    <Clock className="w-4 h-4 text-primary" />
-                  </div>
-                ))}
-                {interviews.filter(i => i.status === "scheduled").length === 0 && (
-                  <p className="text-muted-foreground text-center py-4">No upcoming interviews</p>
-                )}
+                  ))}
+                  {interviews.filter(i => i.status === "scheduled").length === 0 && (
+                    <p className="text-muted-foreground text-center py-4 text-sm">No upcoming interviews</p>
+                  )}
+                </div>
               </Card>
             </div>
           </TabsContent>
@@ -353,9 +407,9 @@ const AdminDashboard = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <Card className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2 flex-1">
+                  <Card className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                      <div className="space-y-2 flex-1 w-full">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-foreground">
                             {proof.profiles?.first_name} {proof.profiles?.last_name}
@@ -405,12 +459,13 @@ const AdminDashboard = () => {
                         </p>
                       </div>
 
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="flex gap-2 flex-wrap w-full sm:w-auto">
                         {proof.document_id && (
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => setViewingDocument(proof.document_id)}
+                            className="flex-1 sm:flex-none"
                           >
                             <Eye className="w-4 h-4 mr-1" />
                             View
@@ -423,6 +478,7 @@ const AdminDashboard = () => {
                               size="sm"
                               variant="default"
                               onClick={() => handlePaymentAction(proof.id, "approve")}
+                              className="flex-1 sm:flex-none"
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />
                               Approve
@@ -434,6 +490,7 @@ const AdminDashboard = () => {
                                 const reason = prompt("Enter rejection reason:");
                                 if (reason) handlePaymentAction(proof.id, "reject", reason);
                               }}
+                              className="flex-1 sm:flex-none"
                             >
                               <XCircle className="w-4 h-4 mr-1" />
                               Reject
@@ -463,6 +520,11 @@ const AdminDashboard = () => {
             <ReferralsManagement />
           </TabsContent>
 
+          {/* Interviews Tab */}
+          <TabsContent value="interviews">
+            <InterviewScheduling onRefresh={loadDashboardData} />
+          </TabsContent>
+
           {/* KYC Tab */}
           <TabsContent value="kyc" className="space-y-4">
             {kycDocuments.length === 0 ? (
@@ -476,9 +538,9 @@ const AdminDashboard = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <Card className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2">
+                  <Card className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                      <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-foreground">
                             {kyc.profiles?.first_name} {kyc.profiles?.last_name}
@@ -514,11 +576,12 @@ const AdminDashboard = () => {
                       </div>
 
                       {kyc.status === "pending" && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap w-full sm:w-auto">
                           <Button
                             size="sm"
                             variant="default"
                             onClick={() => handleKYCAction(kyc.id, "approve")}
+                            className="flex-1 sm:flex-none"
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
                             Approve
@@ -530,6 +593,7 @@ const AdminDashboard = () => {
                               const reason = prompt("Enter rejection reason:");
                               if (reason) handleKYCAction(kyc.id, "reject", reason);
                             }}
+                            className="flex-1 sm:flex-none"
                           >
                             <XCircle className="w-4 h-4 mr-1" />
                             Reject
