@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Mail, Lock, User, Phone, Tag, Chrome } from "lucide-react";
+import { Mail, Lock, User, Phone, Tag, Chrome, AtSign } from "lucide-react";
 import FloatingInput from "../FloatingInput";
 import PasswordStrengthMeter from "./PasswordStrengthMeter";
 import EnhancedGeoDetector from "./EnhancedGeoDetector";
@@ -31,6 +31,7 @@ const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
     password: "",
     confirmPassword: "",
     phone: "",
+    telegramUsername: "",
     referralCode: "",
   });
   const [countryInfo, setCountryInfo] = useState<CountryInfo | null>(null);
@@ -51,6 +52,17 @@ const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
       return;
     }
 
+    if (!formData.telegramUsername.trim()) {
+      toast.error("Telegram username is required");
+      return;
+    }
+
+    // Format telegram username
+    let telegramUsername = formData.telegramUsername.trim();
+    if (!telegramUsername.startsWith("@")) {
+      telegramUsername = "@" + telegramUsername;
+    }
+
     setIsLoading(true);
 
     try {
@@ -59,11 +71,12 @@ const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/signup`,
           data: {
             first_name: formData.firstName,
             last_name: formData.lastName,
             phone: formData.phone,
+            telegram_username: telegramUsername,
             account_type: accountType,
             referral_code: formData.referralCode || null,
           },
@@ -72,18 +85,23 @@ const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
 
       if (error) throw error;
 
-      // Pass data to next step (payment)
+      // Pass data to next step (email verification)
       onNext({
         user: data.user,
-        formData,
+        formData: { ...formData, telegramUsername },
         countryInfo,
         accountType,
+        requiresEmailVerification: !data.user?.email_confirmed_at,
       });
 
-      toast.success("Account created! Proceeding to payment...");
+      toast.success("Account created! Please verify your email...");
     } catch (error: any) {
       console.error("Signup error:", error);
-      toast.error(error.message || "Failed to create account");
+      if (error.message?.includes("already registered")) {
+        toast.error("This email is already registered. Please login instead.");
+      } else {
+        toast.error(error.message || "Failed to create account");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -116,17 +134,17 @@ const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
       exit={{ opacity: 0, x: -20 }}
       className="w-full max-w-2xl mx-auto px-4"
     >
-      <div className="glass-card rounded-3xl p-8 md:p-10">
+      <div className="glass-card rounded-3xl p-6 sm:p-8 md:p-10">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <motion.h1
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl md:text-4xl font-bold text-foreground mb-2"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2"
           >
             Identity Creation
           </motion.h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm sm:text-base">
             {accountType === "student" ? "Student" : "Investor"} Registration
           </p>
         </div>
@@ -137,8 +155,8 @@ const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FloatingInput
               label="First Name"
               icon={<User className="w-5 h-5" />}
@@ -164,14 +182,24 @@ const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
             required
           />
 
-          <FloatingInput
-            label="Phone Number"
-            type="tel"
-            icon={<Phone className="w-5 h-5" />}
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            required
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FloatingInput
+              label="Phone Number"
+              type="tel"
+              icon={<Phone className="w-5 h-5" />}
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              required
+            />
+            <FloatingInput
+              label="Telegram Username"
+              icon={<AtSign className="w-5 h-5" />}
+              value={formData.telegramUsername}
+              onChange={(e) => setFormData({ ...formData, telegramUsername: e.target.value })}
+              placeholder="@username"
+              required
+            />
+          </div>
 
           <div>
             <FloatingInput
@@ -222,10 +250,10 @@ const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
           {/* Submit Button */}
           <Button
             type="submit"
-            className="w-full h-14 text-lg font-semibold"
+            className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold"
             disabled={isLoading}
           >
-            {isLoading ? "Creating Account..." : "Next → Payment Activation"}
+            {isLoading ? "Creating Account..." : "Create Account →"}
           </Button>
 
           {/* Google Sign In */}
@@ -241,7 +269,7 @@ const IdentityCreation = ({ accountType, onNext }: IdentityCreationProps) => {
           <Button
             type="button"
             variant="outline"
-            className="w-full h-14"
+            className="w-full h-12 sm:h-14"
             onClick={handleGoogleSignIn}
           >
             <Chrome className="w-5 h-5 mr-2" />

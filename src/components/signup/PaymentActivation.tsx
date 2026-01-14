@@ -1,13 +1,14 @@
 import { useState, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Bitcoin, Star, Globe, ArrowRight } from "lucide-react";
+import { CreditCard, Bitcoin, Star, Globe, ArrowRight, Building2 } from "lucide-react";
 import { usePaystackPayment } from "react-paystack";
 import { toast } from "sonner";
 import { PaymentScreenshotUpload } from "./PaymentScreenshotUpload";
-import { PaymentVerificationSuccess } from "./PaymentVerificationSuccess";
+import SuccessCelebration from "./SuccessCelebration";
 import CryptoPayment from "./CryptoPayment";
 import TelegramStarsPayment from "./TelegramStarsPayment";
+import NigerianBankPayment from "./NigerianBankPayment";
 
 interface PaymentActivationProps {
   userData: any;
@@ -20,14 +21,14 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
   const [isProcessing, setIsProcessing] = useState(false);
   const [showScreenshotUpload, setShowScreenshotUpload] = useState(false);
   const [showVerificationSuccess, setShowVerificationSuccess] = useState(false);
-  const [activePaymentView, setActivePaymentView] = useState<"crypto" | "stars" | null>(null);
+  const [activePaymentView, setActivePaymentView] = useState<"crypto" | "stars" | "bank" | null>(null);
 
   const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "";
 
   const paystackConfig = {
     reference: `BP_${new Date().getTime()}_${Math.random().toString(36).substring(7)}`,
     email: userData?.formData?.email || "user@example.com",
-    amount: (countryInfo?.fee || 5000) * 100,
+    amount: (countryInfo?.fee || 35000) * 100,
     publicKey: publicKey,
   };
 
@@ -35,7 +36,8 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
 
   const handlePaystackPayment = () => {
     if (!publicKey) {
-      toast.error("Payment system not configured");
+      toast.error("Payment system not configured. Use bank transfer instead.");
+      setActivePaymentView("bank");
       return;
     }
 
@@ -43,8 +45,8 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
 
     initializePayment({
       onSuccess: () => {
-        toast.success("Payment initiated! Please upload your payment screenshot.");
-        setShowScreenshotUpload(true);
+        toast.success("Payment successful!");
+        setShowVerificationSuccess(true);
         setIsProcessing(false);
       },
       onClose: () => {
@@ -52,6 +54,10 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
         setIsProcessing(false);
       },
     });
+  };
+
+  const handleBankTransfer = () => {
+    setActivePaymentView("bank");
   };
 
   const handleCryptoPayment = () => {
@@ -62,45 +68,67 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
     setActivePaymentView("stars");
   };
 
+  const handleVerificationComplete = () => {
+    setShowVerificationSuccess(true);
+  };
+
+  const handleCelebrationComplete = () => {
+    setShowVerificationSuccess(false);
+    onComplete();
+  };
+
   // Payment methods based on location
   const isNigeria = countryInfo?.zone === "nigeria";
 
-  const paymentMethods = isNigeria
-    ? [
-        {
-          id: "paystack",
-          name: "Card Payment",
-          icon: <CreditCard className="w-6 h-6" />,
-          description: "Debit/Credit Card via Paystack",
-          available: true,
-          handler: handlePaystackPayment,
-        },
-      ]
-    : [
-        {
-          id: "crypto",
-          name: "Pay with USDT (BEP20)",
-          icon: <Bitcoin className="w-6 h-6" />,
-          description: "Send $50 USDT to our Binance Smart Chain wallet",
-          available: true,
-          handler: handleCryptoPayment,
-        },
-        {
-          id: "telegram_stars",
-          name: "Pay with Telegram Stars",
-          icon: <Star className="w-6 h-6 text-yellow-500" />,
-          description: "Pay $50 via Telegram Stars in our bot",
-          available: true,
-          handler: handleStarsPayment,
-        },
-      ];
+  const userFullName = `${userData?.formData?.firstName || ""} ${userData?.formData?.lastName || ""}`.trim() || "User";
+
+  const nigeriaPaymentMethods = [
+    {
+      id: "paystack",
+      name: "Card Payment",
+      icon: <CreditCard className="w-6 h-6" />,
+      description: "Pay instantly with Debit/Credit Card",
+      available: true,
+      handler: handlePaystackPayment,
+    },
+    {
+      id: "bank",
+      name: "Bank Transfer",
+      icon: <Building2 className="w-6 h-6" />,
+      description: "Transfer directly to our bank account",
+      available: true,
+      handler: handleBankTransfer,
+    },
+  ];
+
+  const internationalPaymentMethods = [
+    {
+      id: "crypto",
+      name: "Pay with USDT (BEP20)",
+      icon: <Bitcoin className="w-6 h-6" />,
+      description: "Send $50 USDT to our Binance Smart Chain wallet",
+      available: true,
+      handler: handleCryptoPayment,
+    },
+    {
+      id: "telegram_stars",
+      name: "Pay with Telegram Stars",
+      icon: <Star className="w-6 h-6 text-yellow-500" />,
+      description: "Pay $50 via Telegram Stars in our bot",
+      available: true,
+      handler: handleStarsPayment,
+    },
+  ];
+
+  const paymentMethods = isNigeria ? nigeriaPaymentMethods : internationalPaymentMethods;
 
   return (
     <>
+      {/* Success Celebration */}
       <AnimatePresence>
         {showVerificationSuccess && (
-          <PaymentVerificationSuccess 
-            onComplete={onComplete} 
+          <SuccessCelebration 
+            onComplete={handleCelebrationComplete} 
             userName={userData?.formData?.firstName || "Member"}
           />
         )}
@@ -184,7 +212,7 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
               <CryptoPayment
                 amount={50}
                 currency="USDT"
-                onComplete={() => setShowVerificationSuccess(true)}
+                onComplete={handleVerificationComplete}
               />
             </div>
           ) : activePaymentView === "stars" ? (
@@ -198,7 +226,24 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
                 ← Back to payment options
               </Button>
               <TelegramStarsPayment
-                onComplete={() => setShowVerificationSuccess(true)}
+                onComplete={handleVerificationComplete}
+              />
+            </div>
+          ) : activePaymentView === "bank" ? (
+            <div className="space-y-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActivePaymentView(null)}
+                className="mb-2"
+              >
+                ← Back to payment options
+              </Button>
+              <NigerianBankPayment
+                amount={countryInfo?.fee || 35000}
+                currency={countryInfo?.currency || "NGN"}
+                userFullName={userFullName}
+                onComplete={handleVerificationComplete}
               />
             </div>
           ) : !showScreenshotUpload ? (
@@ -230,14 +275,14 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
                     }`}
                   >
                     <div className="flex items-center gap-3 sm:gap-4">
-                      <div className={`p-2 sm:p-3 rounded-full ${method.available ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                      <div className={`p-2 sm:p-3 rounded-full flex-shrink-0 ${method.available ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
                         {method.icon}
                       </div>
-                      <div className="flex-1 text-left">
-                        <p className="font-semibold text-foreground text-sm sm:text-base">{method.name}</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground">{method.description}</p>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="font-semibold text-foreground text-sm sm:text-base truncate">{method.name}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{method.description}</p>
                       </div>
-                      <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                      <ArrowRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                     </div>
                   </motion.button>
                 ))}
@@ -258,8 +303,8 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
             <PaymentScreenshotUpload
               expectedAmount={countryInfo?.fee || 50}
               currency={countryInfo?.currency || "USD"}
-              onVerified={() => setShowVerificationSuccess(true)}
-              userFullName={`${userData?.formData?.firstName || ""} ${userData?.formData?.lastName || ""}`.trim() || "User"}
+              onVerified={handleVerificationComplete}
+              userFullName={userFullName}
             />
           )}
 
