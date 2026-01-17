@@ -91,18 +91,32 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
       let isVPN = false;
       
       try {
-        // Check vpnapi.io for VPN detection
-        const vpnResponse = await fetch(`https://vpnapi.io/api/${geoData?.ip}`, {
+        // Use ip-api.com which includes proxy/VPN detection for free
+        const vpnCheckResponse = await fetch(`http://ip-api.com/json/${geoData?.ip}?fields=proxy,hosting`, {
           signal: AbortSignal.timeout(3000)
         });
-        if (vpnResponse.ok) {
-          const vpnData = await vpnResponse.json();
-          isVPN = vpnData?.security?.vpn === true || 
-                  vpnData?.security?.proxy === true ||
-                  vpnData?.security?.tor === true;
+        if (vpnCheckResponse.ok) {
+          const vpnCheckData = await vpnCheckResponse.json();
+          // proxy = true means VPN/Proxy, hosting = true means datacenter IP (likely VPN)
+          isVPN = vpnCheckData?.proxy === true || vpnCheckData?.hosting === true;
         }
       } catch {
-        // VPN check failed, continue without it
+        // VPN check failed, try alternative method
+        try {
+          // Fallback: Check ipwho.is which also has VPN detection
+          const ipwhoResponse = await fetch(`https://ipwho.is/${geoData?.ip}`, {
+            signal: AbortSignal.timeout(3000)
+          });
+          if (ipwhoResponse.ok) {
+            const ipwhoData = await ipwhoResponse.json();
+            isVPN = ipwhoData?.security?.proxy === true || 
+                    ipwhoData?.security?.vpn === true ||
+                    ipwhoData?.security?.tor === true;
+          }
+        } catch {
+          // All VPN checks failed, continue without it
+          console.log("VPN detection services unavailable");
+        }
       }
 
       if (isVPN && blockVPN) {
@@ -127,9 +141,9 @@ const EnhancedGeoDetector = ({ onCountryDetected, blockVPN = true }: EnhancedGeo
 
       if (countryCode === "NG") {
         zone = "nigeria";
-        fee = 25000;
+        fee = 50000;
         currency = "₦";
-        paymentMethods = ["paystack"]; // Only Paystack for Nigerians
+        paymentMethods = ["paystack", "bank"]; // Paystack or Bank Transfer for Nigerians
       } else {
         zone = "international";
         fee = 50;
