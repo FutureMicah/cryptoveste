@@ -494,6 +494,36 @@ export type Database = {
         }
         Relationships: []
       }
+      zone_change_history: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          new_zone: string
+          previous_zone: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          new_zone: string
+          previous_zone?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          new_zone?: string
+          previous_zone?: string | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
