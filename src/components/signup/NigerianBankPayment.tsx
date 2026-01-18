@@ -71,6 +71,19 @@ const NigerianBankPayment = ({ amount, currency, userFullName, onComplete }: Nig
         animate={{ opacity: 1, x: 0 }}
         className="space-y-4"
       >
+        {/* Required Notice at Top */}
+        <div className="p-4 rounded-xl bg-primary/10 border-2 border-primary/30">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">📸</span>
+            <div>
+              <p className="font-bold text-foreground text-lg">Payment Screenshot Required</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Upload your payment screenshot to continue. This is mandatory for account activation.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <Button
           variant="ghost"
           size="sm"
@@ -81,7 +94,7 @@ const NigerianBankPayment = ({ amount, currency, userFullName, onComplete }: Nig
         </Button>
         
         <PaymentScreenshotUpload
-          expectedAmount={amount}
+          expectedAmount={50000}
           currency={currency}
           onVerified={onComplete}
           userFullName={userFullName}
@@ -101,8 +114,9 @@ const NigerianBankPayment = ({ amount, currency, userFullName, onComplete }: Nig
         <div className="text-center">
           <p className="text-sm text-muted-foreground mb-1">Amount to Pay</p>
           <p className="text-3xl font-bold text-primary">
-            {currency} {amount.toLocaleString()}
+            ₦50,000
           </p>
+          <p className="text-xs text-muted-foreground mt-1">Fifty Thousand Naira Only</p>
         </div>
       </Card>
 
