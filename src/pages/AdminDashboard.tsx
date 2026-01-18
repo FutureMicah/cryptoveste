@@ -20,6 +20,7 @@ import InterviewScheduling from "@/components/admin/InterviewScheduling";
 import RealtimeNotifications from "@/components/admin/RealtimeNotifications";
 import AdminSettings from "@/components/admin/AdminSettings";
 import ActivityLogsViewer from "@/components/admin/ActivityLogsViewer";
+import PayoutsManagement from "@/components/admin/PayoutsManagement";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -314,6 +315,10 @@ const AdminDashboard = () => {
               <Share2 className="w-4 h-4 mr-1 hidden sm:inline" />
               Referrals
             </TabsTrigger>
+            <TabsTrigger value="payouts" className="flex-1 min-w-[80px]">
+              <DollarSign className="w-4 h-4 mr-1 hidden sm:inline" />
+              Payouts
+            </TabsTrigger>
             <TabsTrigger value="interviews" className="flex-1 min-w-[100px]">
               <Calendar className="w-4 h-4 mr-1 hidden sm:inline" />
               Interviews
@@ -528,6 +533,11 @@ const AdminDashboard = () => {
           {/* Referrals Tab */}
           <TabsContent value="referrals">
             <ReferralsManagement />
+          </TabsContent>
+
+          {/* Payouts Tab */}
+          <TabsContent value="payouts">
+            <PayoutsManagement />
           </TabsContent>
 
           {/* Interviews Tab */}

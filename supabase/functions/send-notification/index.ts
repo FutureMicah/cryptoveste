@@ -11,7 +11,7 @@ const corsHeaders = {
 
 interface NotificationRequest {
   userId: string;
-  type: "payment_approved" | "payment_rejected" | "kyc_status" | "interview_scheduled" | "interview_confirmed";
+  type: "payment_approved" | "payment_rejected" | "kyc_status" | "interview_scheduled" | "interview_confirmed" | "referral_earnings" | "payout_processed" | "payout_rejected";
   data: Record<string, any>;
 }
 
@@ -284,6 +284,167 @@ const EMAIL_TEMPLATES = {
                 ? 'Congratulations! Your interview has been approved. Your investor account is now fully activated.'
                 : 'Thank you for completing your interview. Our team is reviewing the results and will contact you shortly.'}
             </p>
+          </div>
+          <div class="footer">
+            <p>© 2024 BlackPAL. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  }),
+
+  referral_earnings: (data: any) => ({
+    subject: "💰 You Earned ₦5,000 - Referral Commission Credited!",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #ffffff; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+          .header { text-align: center; margin-bottom: 40px; }
+          .logo { font-size: 32px; font-weight: bold; color: #D4AF37; }
+          .earnings-badge { background: linear-gradient(135deg, #10B981, #059669); color: white; padding: 16px 32px; border-radius: 50px; display: inline-block; margin: 20px 0; font-weight: 600; font-size: 24px; }
+          .content { background: #111111; border-radius: 16px; padding: 32px; border: 1px solid #222; }
+          .detail { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #222; }
+          .detail-label { color: #888; }
+          .detail-value { color: #fff; font-weight: 500; }
+          .footer { text-align: center; margin-top: 40px; color: #666; font-size: 14px; }
+          .cta { display: inline-block; background: linear-gradient(135deg, #D4AF37, #B8860B); color: #000; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">BlackPAL</div>
+            <div class="earnings-badge">+₦5,000</div>
+          </div>
+          <div class="content">
+            <h2 style="text-align: center; margin-bottom: 24px;">🎉 Referral Commission Credited!</h2>
+            <p style="text-align: center; color: #aaa; margin-bottom: 24px;">
+              Great news! Someone you referred just completed their payment, and your commission has been credited to your account.
+            </p>
+            <div class="detail">
+              <span class="detail-label">Referred User</span>
+              <span class="detail-value">${data.refereeName || 'New Member'}</span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Commission Amount</span>
+              <span class="detail-value" style="color: #10B981; font-weight: bold;">₦5,000</span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">New Total Earnings</span>
+              <span class="detail-value" style="color: #D4AF37; font-weight: bold;">₦${data.totalEarnings?.toLocaleString() || '5,000'}</span>
+            </div>
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://blackpal.lovable.app/dashboard" class="cta">View Dashboard →</a>
+            </div>
+            <p style="text-align: center; color: #888; font-size: 14px; margin-top: 20px;">
+              Keep sharing your referral link to earn more commissions! Request a payout when you're ready.
+            </p>
+          </div>
+          <div class="footer">
+            <p>© 2024 BlackPAL. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  }),
+
+  payout_processed: (data: any) => ({
+    subject: "✅ Payout Processed - ₦" + (data.amount?.toLocaleString() || '0') + " Sent!",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #ffffff; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+          .header { text-align: center; margin-bottom: 40px; }
+          .logo { font-size: 32px; font-weight: bold; color: #D4AF37; }
+          .success-badge { background: linear-gradient(135deg, #10B981, #059669); color: white; padding: 12px 24px; border-radius: 50px; display: inline-block; margin: 20px 0; font-weight: 600; }
+          .content { background: #111111; border-radius: 16px; padding: 32px; border: 1px solid #222; }
+          .amount { font-size: 42px; font-weight: bold; color: #10B981; text-align: center; margin: 20px 0; }
+          .detail { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #222; }
+          .detail-label { color: #888; }
+          .detail-value { color: #fff; font-weight: 500; }
+          .footer { text-align: center; margin-top: 40px; color: #666; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">BlackPAL</div>
+            <div class="success-badge">✓ Payout Complete</div>
+          </div>
+          <div class="content">
+            <h2 style="text-align: center; margin-bottom: 24px;">Your Payout Has Been Processed!</h2>
+            <div class="amount">₦${data.amount?.toLocaleString() || '0'}</div>
+            <div class="detail">
+              <span class="detail-label">Status</span>
+              <span class="detail-value" style="color: #10B981;">Sent</span>
+            </div>
+            ${data.reference ? `
+            <div class="detail">
+              <span class="detail-label">Reference</span>
+              <span class="detail-value" style="font-family: monospace;">${data.reference}</span>
+            </div>
+            ` : ''}
+            <div class="detail">
+              <span class="detail-label">Date</span>
+              <span class="detail-value">${new Date().toLocaleDateString()}</span>
+            </div>
+            <p style="text-align: center; color: #888; font-size: 14px; margin-top: 24px;">
+              Funds have been sent to your registered bank account. Please allow 1-2 business days for the transfer to reflect.
+            </p>
+          </div>
+          <div class="footer">
+            <p>© 2024 BlackPAL. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  }),
+
+  payout_rejected: (data: any) => ({
+    subject: "⚠️ Payout Request Declined - Action Required",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #ffffff; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+          .header { text-align: center; margin-bottom: 40px; }
+          .logo { font-size: 32px; font-weight: bold; color: #D4AF37; }
+          .error-badge { background: linear-gradient(135deg, #EF4444, #DC2626); color: white; padding: 12px 24px; border-radius: 50px; display: inline-block; margin: 20px 0; font-weight: 600; }
+          .content { background: #111111; border-radius: 16px; padding: 32px; border: 1px solid #222; }
+          .reason-box { background: #1a0a0a; border: 1px solid #EF4444; border-radius: 12px; padding: 20px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 40px; color: #666; font-size: 14px; }
+          .cta { display: inline-block; background: linear-gradient(135deg, #D4AF37, #B8860B); color: #000; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">BlackPAL</div>
+            <div class="error-badge">✗ Payout Declined</div>
+          </div>
+          <div class="content">
+            <h2 style="text-align: center; margin-bottom: 24px;">Your Payout Request Was Declined</h2>
+            <div class="reason-box">
+              <p style="color: #EF4444; font-weight: 600; margin-bottom: 8px;">Reason:</p>
+              <p style="color: #fff;">${data.reason || 'Your payout request could not be processed at this time.'}</p>
+            </div>
+            <p style="text-align: center; color: #888;">
+              Your earnings balance has been restored. Please contact support if you have questions.
+            </p>
+            <div style="text-align: center;">
+              <a href="https://t.me/${SUPPORT_USERNAME.replace('@', '')}" class="cta">Contact Support</a>
+            </div>
           </div>
           <div class="footer">
             <p>© 2024 BlackPAL. All rights reserved.</p>

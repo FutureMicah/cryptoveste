@@ -110,7 +110,7 @@ serve(async (req) => {
       if (payment?.referral_code_used) {
         const { data: referrerProfile } = await supabase
           .from("profiles")
-          .select("total_earnings, referral_code")
+          .select("id, total_earnings, referral_code")
           .eq("referral_code", payment.referral_code_used)
           .single();
 
@@ -126,6 +126,23 @@ serve(async (req) => {
             console.error("Earnings update error:", earningsError);
           } else {
             console.log("Updated referrer earnings:", newEarnings);
+            
+            // Send referral earnings notification email
+            try {
+              await supabase.functions.invoke("send-notification", {
+                body: {
+                  userId: referrerProfile.id,
+                  type: "referral_earnings",
+                  data: {
+                    refereeName: email,
+                    totalEarnings: newEarnings,
+                  },
+                },
+              });
+              console.log("Referral earnings email sent to:", referrerProfile.id);
+            } catch (emailError) {
+              console.error("Failed to send referral email:", emailError);
+            }
           }
 
           // Update referral status
