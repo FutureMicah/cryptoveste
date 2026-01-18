@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { 
   Table, TableBody, TableCell, TableHead, 
   TableHeader, TableRow 
 } from "@/components/ui/table";
-import { Users, DollarSign, TrendingUp } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Download, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { exportReferralsToCSV } from "@/utils/exportUsers";
 
 const ReferralsManagement = () => {
   const [referrals, setReferrals] = useState<any[]>([]);
@@ -141,32 +144,62 @@ const ReferralsManagement = () => {
 
       {/* Recent Referrals Table */}
       <Card className="p-6">
-        <h3 className="text-lg font-bold text-foreground mb-4">Recent Referrals</h3>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 className="text-lg font-bold text-foreground">Recent Referrals</h3>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                exportReferralsToCSV(referrals);
+                toast.success("Referrals exported to CSV");
+              }}
+              disabled={referrals.length === 0}
+              className="h-8 text-xs"
+            >
+              <Download className="w-3 h-3 mr-1" />
+              Export
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setLoading(true);
+                loadReferrals();
+                loadTopReferrers();
+              }}
+              className="h-8 text-xs"
+            >
+              <RefreshCw className={`w-3 h-3 mr-1 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Referrer</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Referee</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead className="text-xs">Referrer</TableHead>
+                <TableHead className="text-xs">Code</TableHead>
+                <TableHead className="text-xs">Referee</TableHead>
+                <TableHead className="text-xs">Amount</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-xs">Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {referrals.map((referral) => (
                 <TableRow key={referral.id}>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium text-xs">
                     {referral.referrer?.first_name} {referral.referrer?.last_name}
                   </TableCell>
-                  <TableCell className="font-mono">
+                  <TableCell className="font-mono text-xs">
                     {referral.referrer?.referral_code}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-xs">
                     {referral.referee?.first_name} {referral.referee?.last_name}
                   </TableCell>
-                  <TableCell>₦{referral.amount?.toLocaleString()}</TableCell>
+                  <TableCell className="text-xs">₦{referral.amount?.toLocaleString()}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded text-xs ${
                       referral.status === "completed" 
@@ -176,7 +209,7 @@ const ReferralsManagement = () => {
                       {referral.status}
                     </span>
                   </TableCell>
-                  <TableCell className="text-sm">
+                  <TableCell className="text-xs">
                     {new Date(referral.created_at).toLocaleDateString()}
                   </TableCell>
                 </TableRow>

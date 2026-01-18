@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Upload, CheckCircle, AlertCircle, Image as ImageIcon, User } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Upload, CheckCircle, AlertCircle, Image as ImageIcon, User, PartyPopper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,6 +28,7 @@ export const PaymentScreenshotUpload = ({
   const [fileName, setFileName] = useState<string>("");
   const [uploadComplete, setUploadComplete] = useState(false);
   const [paymentAccountName, setPaymentAccountName] = useState("");
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -127,7 +128,15 @@ export const PaymentScreenshotUpload = ({
       }
 
       setUploadComplete(true);
-      toast.success("Screenshot uploaded! Verification in progress...");
+      setShowConfetti(true);
+      playVerificationSound();
+      toast.success("🎉 Screenshot uploaded successfully!", {
+        description: "Your payment is being verified. You'll be notified shortly.",
+        duration: 5000,
+      });
+
+      // Hide confetti after animation
+      setTimeout(() => setShowConfetti(false), 3000);
 
       // Check for auto-verification after a short delay
       setTimeout(async () => {
@@ -160,17 +169,73 @@ export const PaymentScreenshotUpload = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative">
+      {/* Confetti Animation */}
+      <AnimatePresence>
+        {showConfetti && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center"
+          >
+            <div className="absolute inset-0 overflow-hidden">
+              {[...Array(50)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-3 h-3 rounded-full"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: '-20px',
+                    backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'][i % 7],
+                  }}
+                  animate={{
+                    y: window.innerHeight + 50,
+                    x: (Math.random() - 0.5) * 200,
+                    rotate: Math.random() * 720,
+                    opacity: [1, 1, 0],
+                  }}
+                  transition={{
+                    duration: 2 + Math.random() * 2,
+                    delay: Math.random() * 0.5,
+                    ease: "easeOut",
+                  }}
+                />
+              ))}
+            </div>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: [0, 1.2, 1] }}
+              className="bg-green-500/90 p-6 rounded-full"
+            >
+              <PartyPopper className="w-12 h-12 text-white" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Required Notice Banner */}
+      <div className="p-4 rounded-xl bg-orange-500/10 border-2 border-orange-500/30">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">⚠️</span>
+          <div>
+            <p className="font-bold text-foreground">Screenshot Required to Continue</p>
+            <p className="text-xs text-muted-foreground">
+              Your account will only be activated after uploading proof of payment.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="rounded-lg border border-border/50 bg-card/30 p-6">
         <div className="mb-4 flex items-start gap-3">
           <AlertCircle className="mt-1 h-5 w-5 text-primary" />
           <div className="text-sm space-y-2">
             <p className="font-medium text-foreground">
-              Important: Upload Payment Screenshot
+              Upload Payment Screenshot
             </p>
             <p className="text-muted-foreground">
-              All payments must include a screenshot showing: transaction date, amount,
-              recipient (BlackPAL/BlackTrader Academy), and transaction ID/reference.
+              Screenshot must show: transaction date, amount (₦50,000), recipient, and transaction ID/reference.
             </p>
             <p className="text-muted-foreground font-medium mt-2">
               ⚠️ The account name must match your signup name: <strong>{userFullName}</strong>

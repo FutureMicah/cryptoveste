@@ -25,8 +25,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, RefreshCw, Mail, Ban, CheckCircle, Globe, History, Users } from "lucide-react";
+import { Search, RefreshCw, Mail, Ban, CheckCircle, Globe, History, Users, Download } from "lucide-react";
 import { toast } from "sonner";
+import { exportUsersToCSV } from "@/utils/exportUsers";
 
 interface User {
   id: string;
@@ -375,6 +376,21 @@ const UsersManagement = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            {/* CSV Export Button */}
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => {
+                exportUsersToCSV(filteredUsers);
+                toast.success(`Exported ${filteredUsers.length} users to CSV`);
+              }}
+              disabled={filteredUsers.length === 0}
+              className="h-8 px-2 text-xs"
+            >
+              <Download className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">CSV</span>
+            </Button>
 
             <Button size="sm" variant="outline" onClick={loadUsers} disabled={loading} className="h-8 px-2">
               <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />

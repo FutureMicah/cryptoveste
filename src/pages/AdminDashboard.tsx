@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { 
   CheckCircle, XCircle, Clock, LogOut, Eye, RefreshCw, Users, 
-  DollarSign, Share2, LayoutDashboard, ArrowLeft, Calendar, Settings
+  DollarSign, Share2, LayoutDashboard, ArrowLeft, Calendar, Settings, Activity
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -19,6 +19,7 @@ import ReferralsManagement from "@/components/admin/ReferralsManagement";
 import InterviewScheduling from "@/components/admin/InterviewScheduling";
 import RealtimeNotifications from "@/components/admin/RealtimeNotifications";
 import AdminSettings from "@/components/admin/AdminSettings";
+import ActivityLogsViewer from "@/components/admin/ActivityLogsViewer";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -320,6 +321,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="kyc" className="flex-1 min-w-[80px]">
               KYC ({kycDocuments.filter(k => k.status === "pending").length})
             </TabsTrigger>
+            <TabsTrigger value="activity" className="flex-1 min-w-[80px]">
+              <Activity className="w-4 h-4 mr-1 hidden sm:inline" />
+              Logs
+            </TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 min-w-[80px]">
               <Settings className="w-4 h-4 mr-1 hidden sm:inline" />
               Settings
@@ -610,6 +615,11 @@ const AdminDashboard = () => {
                 </motion.div>
               ))
             )}
+          </TabsContent>
+
+          {/* Activity Logs Tab */}
+          <TabsContent value="activity">
+            <ActivityLogsViewer />
           </TabsContent>
 
           {/* Settings Tab */}

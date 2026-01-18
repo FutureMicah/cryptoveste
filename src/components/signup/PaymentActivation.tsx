@@ -28,7 +28,7 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
   const paystackConfig = {
     reference: `BP_${new Date().getTime()}_${Math.random().toString(36).substring(7)}`,
     email: userData?.formData?.email || "user@example.com",
-    amount: (countryInfo?.fee || 35000) * 100,
+    amount: 50000 * 100, // Always ₦50,000 for Nigeria
     publicKey: publicKey,
   };
 
