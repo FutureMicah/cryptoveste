@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Mail, Lock, Chrome, Copy, TrendingUp, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useReferral } from "@/hooks/useReferral";
+import { useAuth } from "@/hooks/useAuth";
 import FloatingInput from "./FloatingInput";
 import DynamicGreeting from "./DynamicGreeting";
 import MotivationalQuotes from "./MotivationalQuotes";
@@ -18,6 +20,8 @@ const loginSchema = z.object({
 });
 
 const LoginPanel = () => {
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,6 +29,13 @@ const LoginPanel = () => {
   const [showPayment, setShowPayment] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ email?: string; password?: string }>({});
   const { referralCode, hasDiscount, userReferralCode, processPayment, getReferralLink, getReferralStats } = useReferral();
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate("/dashboard");
+    }
+  }, [user, authLoading, navigate]);
 
   const validateForm = (): boolean => {
     const result = loginSchema.safeParse({ email, password });
@@ -67,6 +78,7 @@ const LoginPanel = () => {
         
         if (data.user) {
           toast.success("Access Granted. Welcome back, Ascendant.");
+          navigate("/dashboard");
         }
       } catch (error: any) {
         toast.error("Login failed. Please try again.");
@@ -135,7 +147,7 @@ const LoginPanel = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}/dashboard`,
           queryParams: {
             access_type: "offline",
             prompt: "consent",

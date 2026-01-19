@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ReferralData {
   code: string;
@@ -22,18 +23,37 @@ export const useReferral = () => {
       localStorage.setItem('appliedReferralCode', refCode);
     }
 
-    // Get or generate user's own referral code
+    // Load user's referral code from database if authenticated
+    loadUserReferralCode();
+  }, []);
+
+  const loadUserReferralCode = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('referral_code')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile?.referral_code) {
+        setUserReferralCode(profile.referral_code);
+        return;
+      }
+    }
+
+    // Fallback to localStorage for non-authenticated users
     let myCode = localStorage.getItem('myReferralCode');
     if (!myCode) {
       myCode = generateReferralCode();
       localStorage.setItem('myReferralCode', myCode);
     }
     setUserReferralCode(myCode);
-  }, []);
+  };
 
   const isValidReferralCode = (code: string): boolean => {
     // Valid if it's alphanumeric and between 4-12 characters
-    return /^[A-Z0-9]{4,12}$/.test(code.toUpperCase());
+    return /^[A-Z0-9]{4,12}$/i.test(code);
   };
 
   const generateReferralCode = (): string => {
@@ -45,21 +65,42 @@ export const useReferral = () => {
     return code;
   };
 
-  const processPayment = (username: string) => {
+  const processPayment = async (userId: string, paymentId?: string) => {
     const appliedCode = localStorage.getItem('appliedReferralCode');
     
     if (appliedCode) {
-      // Update referrer's data
-      const referrerKey = `referral_${appliedCode}`;
-      const referrerData: ReferralData = JSON.parse(
-        localStorage.getItem(referrerKey) || '{"code":"","referrals":[],"earnings":0}'
-      );
-      
-      referrerData.code = appliedCode;
-      referrerData.referrals.push(username);
-      referrerData.earnings += 5000;
-      
-      localStorage.setItem(referrerKey, JSON.stringify(referrerData));
+      try {
+        // Find the referrer by their referral code
+        const { data: referrer } = await supabase
+          .from('profiles')
+          .select('id, total_earnings')
+          .eq('referral_code', appliedCode.toUpperCase())
+          .single();
+
+        if (referrer) {
+          // Create referral record
+          await supabase
+            .from('referrals')
+            .insert({
+              referrer_id: referrer.id,
+              referee_id: userId,
+              payment_id: paymentId,
+              amount: 5000,
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+            });
+
+          // Update referrer's earnings
+          await supabase
+            .from('profiles')
+            .update({ 
+              total_earnings: (referrer.total_earnings || 0) + 5000
+            })
+            .eq('id', referrer.id);
+        }
+      } catch (error) {
+        console.error('Error processing referral:', error);
+      }
       
       // Clear applied code after use
       localStorage.removeItem('appliedReferralCode');
@@ -67,10 +108,12 @@ export const useReferral = () => {
   };
 
   const getReferralLink = (): string => {
-    return `https://blackpal-ascend.lovable.app/?ref=${userReferralCode}`;
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/signup?ref=${userReferralCode}`;
   };
 
   const getReferralStats = (): ReferralData => {
+    // This is now handled by the database, but keep for backward compatibility
     const key = `referral_${userReferralCode}`;
     return JSON.parse(
       localStorage.getItem(key) || '{"code":"","referrals":[],"earnings":0}'

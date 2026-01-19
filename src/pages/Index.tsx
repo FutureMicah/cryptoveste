@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import IntroSequence from "@/components/IntroSequence";
@@ -8,10 +8,19 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import ReferralLeaderboard from "@/components/ReferralLeaderboard";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
   const [showIntro, setShowIntro] = useState(true);
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (user && !loading) {
+      navigate("/dashboard");
+    }
+  }, [user, loading, navigate]);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
