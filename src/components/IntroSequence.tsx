@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import blackpalLogo from "@/assets/blackpal-logo.jpg";
 
 interface IntroSequenceProps {
   onComplete: () => void;
@@ -80,7 +81,7 @@ const IntroSequence = ({ onComplete }: IntroSequenceProps) => {
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         >
           <img
-            src="/src/assets/blackpal-logo.jpg"
+            src={blackpalLogo}
             alt="BlackPAL"
             className="w-40 h-40 md:w-56 md:h-56 object-contain rounded-full"
           />
