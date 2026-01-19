@@ -402,6 +402,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_name: string | null
           country_code: string | null
           created_at: string | null
           detected_country: string | null
@@ -419,6 +422,9 @@ export type Database = {
           vpn_detected: boolean | null
         }
         Insert: {
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
           country_code?: string | null
           created_at?: string | null
           detected_country?: string | null
@@ -436,6 +442,9 @@ export type Database = {
           vpn_detected?: boolean | null
         }
         Update: {
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
           country_code?: string | null
           created_at?: string | null
           detected_country?: string | null

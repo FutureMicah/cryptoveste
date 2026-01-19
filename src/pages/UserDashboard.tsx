@@ -16,10 +16,11 @@ import {
 import { 
   LogOut, Copy, Check, ExternalLink, Users, DollarSign, 
   Clock, CheckCircle, XCircle, Share2, MessageCircle, Wallet,
-  ArrowUpRight, RefreshCw, AlertCircle, Banknote
+  ArrowUpRight, RefreshCw, AlertCircle, Banknote, Building2
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import BankDetailsForm from "@/components/BankDetailsForm";
 
 const TELEGRAM_GROUP = "https://t.me/+J0p7oeR8r4k3Yjg0";
 const TELEGRAM_CHANNEL = "https://t.me/BLACKTRADEACADEMYfreechannel";
@@ -422,10 +423,14 @@ const UserDashboard = () => {
         )}
 
         <Tabs defaultValue="referrals" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="referrals" className="text-xs sm:text-sm">
               <Share2 className="w-4 h-4 mr-1 hidden sm:inline" />
               Referrals
+            </TabsTrigger>
+            <TabsTrigger value="bank" className="text-xs sm:text-sm">
+              <Building2 className="w-4 h-4 mr-1 hidden sm:inline" />
+              Bank
             </TabsTrigger>
             <TabsTrigger value="payouts" className="text-xs sm:text-sm">
               <Wallet className="w-4 h-4 mr-1 hidden sm:inline" />
@@ -515,7 +520,32 @@ const UserDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Payouts Tab */}
+          {/* Bank Details Tab */}
+          <TabsContent value="bank" className="space-y-4">
+            <BankDetailsForm 
+              userId={user?.id || ""} 
+              existingDetails={{
+                bank_name: profile?.bank_name,
+                bank_account_number: profile?.bank_account_number,
+                bank_account_name: profile?.bank_account_name,
+              }}
+              onSaved={() => loadUserData(user?.id)}
+            />
+            
+            {!profile?.bank_name && (
+              <Card className="p-4 bg-yellow-500/10 border-yellow-500/30">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-yellow-500">Bank Details Required</p>
+                    <p className="text-sm text-muted-foreground">
+                      Add your bank account to receive your referral earnings when you request a payout.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </TabsContent>
           <TabsContent value="payouts" className="space-y-4">
             <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">

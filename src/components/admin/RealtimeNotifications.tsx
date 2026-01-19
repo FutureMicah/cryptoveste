@@ -129,7 +129,7 @@ const RealtimeNotifications = ({ onNewPaymentProof, onNewUser }: RealtimeNotific
   };
 
   return (
-    <div className="relative">
+    <div className="relative flex-shrink-0">
       {/* Bell Icon with Badge */}
       <button
         onClick={() => setShowBell(!showBell)}
@@ -154,7 +154,7 @@ const RealtimeNotifications = ({ onNewPaymentProof, onNewUser }: RealtimeNotific
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute right-0 top-12 w-80 max-h-96 overflow-y-auto bg-card border border-border rounded-lg shadow-lg z-50"
+            className="fixed sm:absolute right-4 sm:right-0 top-16 sm:top-12 w-[calc(100vw-2rem)] sm:w-80 max-h-96 overflow-y-auto bg-card border border-border rounded-lg shadow-lg z-50"
           >
             <div className="p-3 border-b border-border flex items-center justify-between">
               <span className="font-semibold text-foreground text-sm">Notifications</span>
@@ -174,16 +174,16 @@ const RealtimeNotifications = ({ onNewPaymentProof, onNewUser }: RealtimeNotific
                   exit={{ opacity: 0, x: 20 }}
                   className="p-3 flex items-start gap-3 hover:bg-muted/30"
                 >
-                  <div className="mt-0.5">{getIcon(notification.type)}</div>
+                  <div className="mt-0.5 flex-shrink-0">{getIcon(notification.type)}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground">{notification.message}</p>
+                    <p className="text-sm text-foreground truncate">{notification.message}</p>
                     <p className="text-xs text-muted-foreground">
                       {notification.timestamp.toLocaleTimeString()}
                     </p>
                   </div>
                   <button
                     onClick={() => clearNotification(notification.id)}
-                    className="text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground flex-shrink-0"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -200,7 +200,7 @@ const RealtimeNotifications = ({ onNewPaymentProof, onNewUser }: RealtimeNotific
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
-          className="absolute right-0 top-12 w-64 bg-card border border-border rounded-lg shadow-lg p-4 z-50"
+          className="fixed sm:absolute right-4 sm:right-0 top-16 sm:top-12 w-[calc(100vw-2rem)] sm:w-64 bg-card border border-border rounded-lg shadow-lg p-4 z-50"
         >
           <p className="text-sm text-muted-foreground text-center">
             No new notifications

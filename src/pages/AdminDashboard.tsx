@@ -269,18 +269,20 @@ const AdminDashboard = () => {
               <p className="text-sm text-muted-foreground">Manage payments, users, KYC, and interviews</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <RealtimeNotifications 
-              onNewPaymentProof={loadDashboardData}
-              onNewUser={loadDashboardData}
-            />
-            <Button variant="outline" size="sm" onClick={loadDashboardData}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <div className="flex-shrink-0">
+              <RealtimeNotifications 
+                onNewPaymentProof={loadDashboardData}
+                onNewUser={loadDashboardData}
+              />
+            </div>
+            <Button variant="outline" size="sm" onClick={loadDashboardData} className="flex-shrink-0">
+              <RefreshCw className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
+            <Button variant="outline" size="sm" onClick={handleLogout} className="flex-shrink-0">
+              <LogOut className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
         </div>

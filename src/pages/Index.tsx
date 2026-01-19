@@ -5,6 +5,7 @@ import IntroSequence from "@/components/IntroSequence";
 import CustomCursor from "@/components/CustomCursor";
 import LoginPanel from "@/components/LoginPanel";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import ReferralLeaderboard from "@/components/ReferralLeaderboard";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 
@@ -47,8 +48,23 @@ const Index = () => {
             </motion.div>
             
             {/* Main Content */}
-            <div className="relative z-10 w-full">
-              <LoginPanel />
+            <div className="relative z-10 w-full max-w-6xl mx-auto px-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                {/* Login Panel - Takes 2 columns on large screens */}
+                <div className="lg:col-span-2">
+                  <LoginPanel />
+                </div>
+                
+                {/* Leaderboard - Takes 1 column on large screens */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="lg:col-span-1"
+                >
+                  <ReferralLeaderboard />
+                </motion.div>
+              </div>
             </div>
           </motion.div>
         )}
