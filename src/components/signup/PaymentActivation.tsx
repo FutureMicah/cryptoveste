@@ -240,8 +240,8 @@ const PaymentActivation = ({ userData, countryInfo, onComplete }: PaymentActivat
                 ← Back to payment options
               </Button>
               <NigerianBankPayment
-                amount={countryInfo?.fee || 35000}
-                currency={countryInfo?.currency || "NGN"}
+                amount={50000}
+                currency="NGN"
                 userFullName={userFullName}
                 onComplete={handleVerificationComplete}
               />
