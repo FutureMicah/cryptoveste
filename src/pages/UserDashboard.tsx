@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -14,21 +13,25 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { 
-  LogOut, Copy, Check, ExternalLink, Users, DollarSign, 
-  Clock, CheckCircle, XCircle, Share2, MessageCircle, Wallet,
-  ArrowUpRight, RefreshCw, AlertCircle, Banknote, Building2
+  LogOut, Copy, ExternalLink, Users, DollarSign, 
+  CheckCircle, XCircle, Share2, MessageCircle, Wallet,
+  ArrowUpRight, RefreshCw, AlertCircle, Banknote, Building2, 
+  User, Shield, Hash
 } from "lucide-react";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import BankDetailsForm from "@/components/BankDetailsForm";
+import SessionTimeoutWarning from "@/components/SessionTimeoutWarning";
+import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
 const TELEGRAM_GROUP = "https://t.me/+J0p7oeR8r4k3Yjg0";
 const TELEGRAM_CHANNEL = "https://t.me/BLACKTRADEACADEMYfreechannel";
 const SUPPORT_USERNAME = "@Futuremicah";
-const MIN_PAYOUT = 10000; // Minimum ₦10,000 for payout
+const MIN_PAYOUT = 10000;
 
 const UserDashboard = () => {
   const navigate = useNavigate();
+  const { showWarning, remainingTime, stayLoggedIn, logout } = useSessionTimeout();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
@@ -40,6 +43,8 @@ const UserDashboard = () => {
   const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutProcessing, setPayoutProcessing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showBankDetails, setShowBankDetails] = useState(false);
+  const [memberNumber, setMemberNumber] = useState<number | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -67,6 +72,14 @@ const UserDashboard = () => {
       
       setProfile(profileData);
 
+      // Get member number (count of profiles created before this one)
+      const { count } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .lte("created_at", profileData?.created_at || new Date().toISOString());
+      
+      setMemberNumber(count || 1);
+
       // Load payments
       const { data: paymentsData } = await supabase
         .from("payments")
@@ -79,10 +92,7 @@ const UserDashboard = () => {
       // Load referrals where user is the referrer
       const { data: referralsData } = await supabase
         .from("referrals")
-        .select(`
-          *,
-          referee:referee_id (first_name, last_name)
-        `)
+        .select("*")
         .eq("referrer_id", userId)
         .order("created_at", { ascending: false });
       
@@ -135,9 +145,16 @@ const UserDashboard = () => {
       return;
     }
 
+    // Check if bank details are set
+    if (!profile?.bank_account_name || !profile?.bank_account_number || !profile?.bank_name) {
+      toast.error("Please add your bank details first");
+      setShowBankDetails(true);
+      setPayoutDialogOpen(false);
+      return;
+    }
+
     setPayoutProcessing(true);
     try {
-      // Create payout request
       const { error: payoutError } = await supabase
         .from("payouts")
         .insert({
@@ -148,7 +165,6 @@ const UserDashboard = () => {
 
       if (payoutError) throw payoutError;
 
-      // Deduct from user's earnings (will be restored if rejected)
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ 
@@ -187,484 +203,419 @@ const UserDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Payout Request Dialog */}
-      <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
-        <DialogContent className="bg-card max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-primary" />
-              Request Payout
-            </DialogTitle>
-            <DialogDescription>
-              Enter the amount you'd like to withdraw from your earnings.
+    <>
+      {/* Session Timeout Warning */}
+      <SessionTimeoutWarning
+        show={showWarning}
+        remainingTime={remainingTime}
+        onStayLoggedIn={stayLoggedIn}
+        onLogout={logout}
+      />
+
+      <div className="min-h-screen bg-background">
+        {/* Payout Request Dialog */}
+        <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
+          <DialogContent className="bg-card max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-primary" />
+                Request Payout
+              </DialogTitle>
+              <DialogDescription>
+                Enter the amount you'd like to withdraw from your earnings.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4 space-y-4">
+              <div className="p-4 rounded-lg bg-muted/50">
+                <p className="text-sm text-muted-foreground">Available Balance</p>
+                <p className="text-2xl font-bold text-green-500">₦{availableBalance.toLocaleString()}</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Payout Amount (₦)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₦</span>
+                  <Input
+                    type="number"
+                    value={payoutAmount}
+                    onChange={(e) => setPayoutAmount(e.target.value)}
+                    placeholder={MIN_PAYOUT.toLocaleString()}
+                    className="pl-8"
+                    min={MIN_PAYOUT}
+                    max={availableBalance}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Minimum payout: ₦{MIN_PAYOUT.toLocaleString()}
+                </p>
+              </div>
+
+              {parseFloat(payoutAmount) > availableBalance && (
+                <div className="flex items-center gap-2 text-red-500 text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  Insufficient balance
+                </div>
+              )}
+
+              <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                <p className="text-xs text-yellow-500">
+                  <strong>Note:</strong> Payouts are processed within 24-48 hours to your registered bank account.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPayoutDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handlePayoutRequest}
+                disabled={
+                  payoutProcessing || 
+                  parseFloat(payoutAmount) < MIN_PAYOUT || 
+                  parseFloat(payoutAmount) > availableBalance
+                }
+              >
+                {payoutProcessing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <ArrowUpRight className="w-4 h-4 mr-2" />
+                    Request Payout
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bank Details Dialog */}
+        <Dialog open={showBankDetails} onOpenChange={setShowBankDetails}>
+          <DialogContent className="bg-card max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-primary" />
+                Bank Details
+              </DialogTitle>
+              <DialogDescription>
+              Add your bank details to receive payouts
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="py-4 space-y-4">
-            <div className="p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">Available Balance</p>
-              <p className="text-2xl font-bold text-green-500">₦{availableBalance.toLocaleString()}</p>
+          <BankDetailsForm 
+            userId={user?.id} 
+            existingDetails={{
+              bank_name: profile?.bank_name || null,
+              bank_account_number: profile?.bank_account_number || null,
+              bank_account_name: profile?.bank_account_name || null,
+            }}
+            onSaved={() => {
+              setShowBankDetails(false);
+              loadUserData(user.id);
+            }}
+          />
+          </DialogContent>
+        </Dialog>
+
+        <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                Welcome, {profile?.first_name || "User"}! 👋
+              </h1>
+              <p className="text-sm text-muted-foreground">Your BlackPAL Dashboard</p>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Payout Amount (₦)</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₦</span>
-                <Input
-                  type="number"
-                  value={payoutAmount}
-                  onChange={(e) => setPayoutAmount(e.target.value)}
-                  placeholder={MIN_PAYOUT.toLocaleString()}
-                  className="pl-8"
-                  min={MIN_PAYOUT}
-                  max={availableBalance}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Minimum payout: ₦{MIN_PAYOUT.toLocaleString()}
-              </p>
-            </div>
-
-            {parseFloat(payoutAmount) > availableBalance && (
-              <div className="flex items-center gap-2 text-red-500 text-sm">
-                <AlertCircle className="w-4 h-4" />
-                Insufficient balance
-              </div>
-            )}
-
-            <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-              <p className="text-xs text-yellow-500">
-                <strong>Note:</strong> Payouts are processed within 24-48 hours to your registered bank account.
-              </p>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+                <RefreshCw className={`w-4 h-4 mr-1 ${refreshing ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-1" />
+                Logout
+              </Button>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPayoutDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handlePayoutRequest}
-              disabled={
-                payoutProcessing || 
-                parseFloat(payoutAmount) < MIN_PAYOUT || 
-                parseFloat(payoutAmount) > availableBalance
-              }
-            >
-              {payoutProcessing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <ArrowUpRight className="w-4 h-4 mr-2" />
-                  Request Payout
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-6xl">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              Welcome, {profile?.first_name || "User"}!
-            </h1>
-            <p className="text-sm text-muted-foreground">Manage your account, referrals, and earnings</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-              <RefreshCw className={`w-4 h-4 mr-1 ${refreshing ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-1" />
-              Logout
-            </Button>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-          <Card className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Referrals</p>
-                <p className="text-xl sm:text-3xl font-bold text-foreground">{referrals.length}</p>
-                <p className="text-xs text-green-500">{completedReferrals} completed</p>
-              </div>
-              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-            </div>
-          </Card>
-          
-          <Card className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Available Balance</p>
-                <p className="text-xl sm:text-3xl font-bold text-green-500">
-                  ₦{availableBalance.toLocaleString()}
-                </p>
-                {pendingPayouts > 0 && (
-                  <p className="text-xs text-yellow-500">₦{pendingPayouts.toLocaleString()} pending</p>
-                )}
-              </div>
-              <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
-            </div>
-          </Card>
-          
-          <Card className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Per Referral</p>
-                <p className="text-xl sm:text-3xl font-bold text-primary">₦5,000</p>
-                <p className="text-xs text-muted-foreground">Commission</p>
-              </div>
-              <Banknote className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-            </div>
-          </Card>
-          
-          <Card className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Account Status</p>
-                <p className={`text-sm sm:text-lg font-bold ${hasCompletedPayment ? "text-green-500" : "text-yellow-500"}`}>
-                  {hasCompletedPayment ? "Active" : "Pending"}
-                </p>
-              </div>
-              {hasCompletedPayment ? (
-                <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
-              ) : (
-                <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
-              )}
-            </div>
-          </Card>
-        </div>
-
-        {/* Payout CTA */}
-        {availableBalance >= MIN_PAYOUT && (
+          {/* Member Info Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            <Card className="p-4 sm:p-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-full bg-green-500/20">
-                    <Wallet className="w-6 h-6 text-green-500" />
+            <Card className="p-6 bg-gradient-to-br from-primary/10 via-background to-primary/5 border-primary/20">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/50">
+                  <span className="text-2xl font-bold text-primary">
+                    {profile?.first_name?.charAt(0)?.toUpperCase() || "U"}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className="text-xl font-bold text-foreground">
+                      {profile?.first_name} {profile?.last_name}
+                    </h2>
+                    {hasCompletedPayment ? (
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 text-green-500 text-xs font-medium">
+                        <CheckCircle className="w-3 h-3" />
+                        Verified
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-500 text-xs font-medium">
+                        <AlertCircle className="w-3 h-3" />
+                        Pending Payment
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <h3 className="font-bold text-foreground">Ready to Withdraw!</h3>
-                    <p className="text-sm text-muted-foreground">
-                      You have ₦{availableBalance.toLocaleString()} available for payout
-                    </p>
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Hash className="w-4 h-4" />
+                      Member #{memberNumber?.toString().padStart(4, "0")}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <User className="w-4 h-4" />
+                      {user?.email}
+                    </span>
                   </div>
                 </div>
-                <Button 
-                  onClick={() => setPayoutDialogOpen(true)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <ArrowUpRight className="w-4 h-4 mr-2" />
-                  Request Payout
-                </Button>
               </div>
             </Card>
           </motion.div>
-        )}
 
-        {/* Telegram Access - Only show if payment completed */}
-        {hasCompletedPayment && (
+          {/* Verification Status */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
             className="mb-6"
           >
-            <Card className="p-4 sm:p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-primary" />
-                Your Telegram Access
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <a
-                  href={TELEGRAM_GROUP}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 p-3 sm:p-4 bg-[#0088cc] text-white rounded-lg hover:bg-[#0077b5] transition-colors text-sm"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Private Trading Group
-                </a>
-                <a
-                  href={TELEGRAM_CHANNEL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 p-3 sm:p-4 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors text-sm"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Free Channel
-                </a>
-                <a
-                  href={`https://t.me/${SUPPORT_USERNAME.replace("@", "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 p-3 sm:p-4 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors text-sm"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Contact Support
-                </a>
+            <Card className={`p-6 ${hasCompletedPayment ? "bg-green-500/5 border-green-500/30" : "bg-yellow-500/5 border-yellow-500/30"}`}>
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${hasCompletedPayment ? "bg-green-500/20" : "bg-yellow-500/20"}`}>
+                  {hasCompletedPayment ? (
+                    <Shield className="w-6 h-6 text-green-500" />
+                  ) : (
+                    <AlertCircle className="w-6 h-6 text-yellow-500" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground">
+                    {hasCompletedPayment ? "✅ Payment Verified" : "⏳ Verification Pending"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {hasCompletedPayment 
+                      ? "Your payment has been verified. You have full access to all features."
+                      : "Your payment is being verified. This usually takes 24-48 hours."}
+                  </p>
+                </div>
               </div>
             </Card>
           </motion.div>
-        )}
 
-        <Tabs defaultValue="referrals" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="referrals" className="text-xs sm:text-sm">
-              <Share2 className="w-4 h-4 mr-1 hidden sm:inline" />
-              Referrals
-            </TabsTrigger>
-            <TabsTrigger value="bank" className="text-xs sm:text-sm">
-              <Building2 className="w-4 h-4 mr-1 hidden sm:inline" />
-              Bank
-            </TabsTrigger>
-            <TabsTrigger value="payouts" className="text-xs sm:text-sm">
-              <Wallet className="w-4 h-4 mr-1 hidden sm:inline" />
-              Payouts
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="text-xs sm:text-sm">
-              <DollarSign className="w-4 h-4 mr-1 hidden sm:inline" />
-              Payments
-            </TabsTrigger>
-          </TabsList>
+          {/* Telegram Access - Only show if payment completed */}
+          {hasCompletedPayment && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-6"
+            >
+              <Card className="p-6 bg-gradient-to-r from-[#0088cc]/10 to-[#0088cc]/5 border-[#0088cc]/30">
+                <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-[#0088cc]" />
+                  📱 Your Telegram Access
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                  <a
+                    href={TELEGRAM_GROUP}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 p-4 bg-[#0088cc] text-white rounded-xl hover:bg-[#0077b5] transition-colors font-medium"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    🔒 Private Trading Group
+                  </a>
+                  <a
+                    href={TELEGRAM_CHANNEL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 p-4 bg-muted text-foreground rounded-xl hover:bg-muted/80 transition-colors font-medium"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    📢 Free Channel
+                  </a>
+                </div>
+                <div className="p-3 rounded-lg bg-background/50 border border-border/50">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Support:</strong> Contact{" "}
+                    <a 
+                      href={`https://t.me/${SUPPORT_USERNAME.replace("@", "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#0088cc] hover:underline font-medium"
+                    >
+                      {SUPPORT_USERNAME}
+                    </a>
+                    {" "}on Telegram for any issues
+                  </p>
+                </div>
+              </Card>
+            </motion.div>
+          )}
 
-          {/* Referrals Tab */}
-          <TabsContent value="referrals" className="space-y-4">
-            {/* Referral Link */}
-            <Card className="p-4 sm:p-6">
-              <h3 className="text-lg font-bold text-foreground mb-2">Your Referral Link</h3>
+          {/* Quick Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="grid grid-cols-2 gap-4 mb-6"
+          >
+            <Card className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Referrals</p>
+                  <p className="text-2xl font-bold text-foreground">{referrals.length}</p>
+                  <p className="text-xs text-green-500">{completedReferrals} completed</p>
+                </div>
+                <Users className="w-8 h-8 text-primary" />
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Earnings</p>
+                  <p className="text-2xl font-bold text-green-500">
+                    ₦{availableBalance.toLocaleString()}
+                  </p>
+                  {pendingPayouts > 0 && (
+                    <p className="text-xs text-yellow-500">₦{pendingPayouts.toLocaleString()} pending</p>
+                  )}
+                </div>
+                <DollarSign className="w-8 h-8 text-green-500" />
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Referral Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mb-6"
+          >
+            <Card className="p-6">
+              <h3 className="text-lg font-bold text-foreground mb-2 flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-primary" />
+                Your Referral Link
+              </h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Share this link and earn <span className="text-green-500 font-bold">₦5,000</span> for every successful referral!
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex-1 p-3 bg-muted rounded-lg font-mono text-xs sm:text-sm text-foreground truncate">
+                <div className="flex-1 p-3 bg-muted rounded-lg font-mono text-xs text-foreground truncate">
                   {`${window.location.origin}/signup?ref=${profile?.referral_code}`}
                 </div>
                 <Button onClick={copyReferralLink} className="shrink-0">
-                  {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
-                  {copied ? "Copied!" : "Copy"}
+                  {copied ? <CheckCircle className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
+                  {copied ? "Copied!" : "Copy Link"}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-3">
-                Your referral code: <span className="font-mono font-bold text-primary">{profile?.referral_code}</span>
-              </p>
             </Card>
+          </motion.div>
 
-            {/* Referral History */}
-            <Card className="p-4 sm:p-6">
-              <h3 className="text-lg font-bold text-foreground mb-4">
-                Referral History ({referrals.length})
-              </h3>
-              {referrals.length === 0 ? (
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground mb-2">No referrals yet</p>
-                  <p className="text-sm text-muted-foreground">Share your link to start earning!</p>
+          {/* Payout Section */}
+          {availableBalance >= MIN_PAYOUT && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="mb-6"
+            >
+              <Card className="p-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-full bg-green-500/20">
+                      <Wallet className="w-6 h-6 text-green-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground">Ready to Withdraw!</h3>
+                      <p className="text-sm text-muted-foreground">
+                        You have ₦{availableBalance.toLocaleString()} available
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={() => setPayoutDialogOpen(true)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <ArrowUpRight className="w-4 h-4 mr-2" />
+                    Request Payout
+                  </Button>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {referrals.map((referral) => (
-                    <motion.div
-                      key={referral.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center justify-between p-3 sm:p-4 bg-muted/50 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
-                          referral.status === "completed" 
-                            ? "bg-green-500/20 text-green-500" 
-                            : "bg-yellow-500/20 text-yellow-500"
-                        }`}>
-                          {referral.referee?.first_name?.charAt(0) || "?"}
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground text-sm">
-                            {referral.referee?.first_name} {referral.referee?.last_name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(referral.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={`font-bold ${referral.status === "completed" ? "text-green-500" : "text-yellow-500"}`}>
-                          {referral.status === "completed" ? "+₦5,000" : "Pending"}
-                        </p>
-                        <span className={`text-xs px-2 py-0.5 rounded ${
-                          referral.status === "completed" 
-                            ? "bg-green-500/20 text-green-500"
-                            : "bg-yellow-500/20 text-yellow-500"
-                        }`}>
-                          {referral.status}
-                        </span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          </TabsContent>
+              </Card>
+            </motion.div>
+          )}
 
-          {/* Bank Details Tab */}
-          <TabsContent value="bank" className="space-y-4">
-            <BankDetailsForm 
-              userId={user?.id || ""} 
-              existingDetails={{
-                bank_name: profile?.bank_name,
-                bank_account_number: profile?.bank_account_number,
-                bank_account_name: profile?.bank_account_name,
-              }}
-              onSaved={() => loadUserData(user?.id)}
-            />
-            
-            {!profile?.bank_name && (
-              <Card className="p-4 bg-yellow-500/10 border-yellow-500/30">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-yellow-500">Bank Details Required</p>
-                    <p className="text-sm text-muted-foreground">
-                      Add your bank account to receive your referral earnings when you request a payout.
-                    </p>
+          {/* Bank Details Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-primary" />
+                  Bank Details
+                </h3>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowBankDetails(true)}
+                >
+                  {profile?.bank_account_name ? "Edit" : "Add"}
+                </Button>
+              </div>
+              {profile?.bank_account_name ? (
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Bank Name:</span>
+                    <span className="font-medium text-foreground">{profile.bank_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Account Number:</span>
+                    <span className="font-medium text-foreground">{profile.bank_account_number}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Account Name:</span>
+                    <span className="font-medium text-foreground">{profile.bank_account_name}</span>
                   </div>
                 </div>
-              </Card>
-            )}
-          </TabsContent>
-          <TabsContent value="payouts" className="space-y-4">
-            <Card className="p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-foreground">Payout History</h3>
-                <Button 
-                  size="sm" 
-                  onClick={() => setPayoutDialogOpen(true)}
-                  disabled={availableBalance < MIN_PAYOUT}
-                >
-                  <ArrowUpRight className="w-4 h-4 mr-1" />
-                  New Payout
-                </Button>
-              </div>
-
-              {payouts.length === 0 ? (
-                <div className="text-center py-8">
-                  <Wallet className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground mb-2">No payouts yet</p>
-                  <p className="text-sm text-muted-foreground">
-                    {availableBalance >= MIN_PAYOUT 
-                      ? "Request your first payout above!"
-                      : `Earn at least ₦${MIN_PAYOUT.toLocaleString()} to request a payout`}
-                  </p>
-                </div>
               ) : (
-                <div className="space-y-3">
-                  {payouts.map((payout) => (
-                    <motion.div
-                      key={payout.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center justify-between p-3 sm:p-4 bg-muted/50 rounded-lg"
-                    >
-                      <div>
-                        <p className="font-bold text-foreground">₦{payout.amount?.toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(payout.requested_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          payout.status === "completed" 
-                            ? "bg-green-500/20 text-green-500"
-                            : payout.status === "pending"
-                            ? "bg-yellow-500/20 text-yellow-500"
-                            : "bg-red-500/20 text-red-500"
-                        }`}>
-                          {payout.status === "completed" ? "Paid" : payout.status === "pending" ? "Processing" : "Declined"}
-                        </span>
-                        {payout.status === "completed" && <CheckCircle className="w-4 h-4 text-green-500" />}
-                        {payout.status === "pending" && <Clock className="w-4 h-4 text-yellow-500" />}
-                        {payout.status === "rejected" && <XCircle className="w-4 h-4 text-red-500" />}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  Add your bank details to receive payouts
+                </p>
               )}
             </Card>
-          </TabsContent>
+          </motion.div>
 
-          {/* Payments Tab */}
-          <TabsContent value="payments" className="space-y-4">
-            {payments.length === 0 ? (
-              <Card className="p-8 text-center">
-                <DollarSign className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground mb-4">No payments yet</p>
-                <Button onClick={() => navigate("/signup")}>
-                  Complete Registration
-                </Button>
-              </Card>
-            ) : (
-              payments.map((payment) => (
-                <motion.div
-                  key={payment.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <Card className="p-4 sm:p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-foreground text-sm">
-                            {payment.payment_type.replace(/_/g, " ").toUpperCase()}
-                          </span>
-                          <span className={`px-2 py-0.5 rounded text-xs ${
-                            payment.status === "completed" 
-                              ? "bg-green-500/20 text-green-500"
-                              : payment.status === "pending"
-                              ? "bg-yellow-500/20 text-yellow-500"
-                              : "bg-red-500/20 text-red-500"
-                          }`}>
-                            {payment.status}
-                          </span>
-                        </div>
-                        <p className="text-lg font-bold text-foreground">
-                          {payment.currency} {payment.amount?.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(payment.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        {payment.status === "completed" ? (
-                          <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
-                        ) : payment.status === "pending" ? (
-                          <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
-                        ) : (
-                          <XCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-500" />
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))
-            )}
-          </TabsContent>
-        </Tabs>
+          {/* Footer */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="mt-8 text-center text-xs text-muted-foreground"
+          >
+            <p>Need help? Contact <a href={`https://t.me/${SUPPORT_USERNAME.replace("@", "")}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{SUPPORT_USERNAME}</a></p>
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
