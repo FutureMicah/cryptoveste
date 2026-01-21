@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import FloatingInput from "./FloatingInput";
 import DynamicGreeting from "./DynamicGreeting";
 import MotivationalQuotes from "./MotivationalQuotes";
+import ForgotPasswordModal from "./ForgotPasswordModal";
 import { usePaystackPayment } from "react-paystack";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
@@ -27,6 +28,7 @@ const LoginPanel = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ email?: string; password?: string }>({});
   const { referralCode, hasDiscount, userReferralCode, processPayment, getReferralLink, getReferralStats } = useReferral();
 
@@ -90,7 +92,7 @@ const LoginPanel = () => {
     }
   };
 
-  const price = hasDiscount ? 20000 : 25000;
+  const price = hasDiscount ? 45000 : 50000;
   const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "";
   
   const paystackConfig = {
@@ -170,7 +172,7 @@ const LoginPanel = () => {
 
   // Payment Screen
   if (showPayment) {
-    const stars = hasDiscount ? 140 : 180;
+    const stars = hasDiscount ? 320 : 360;
     
     return (
       <motion.div
@@ -216,10 +218,10 @@ const LoginPanel = () => {
                 <p className="text-accent font-bold text-lg">
                   🎉 Referral Code Applied!
                 </p>
-                <p className="text-muted-foreground text-sm mt-1">
-                  You're saving ₦5,000
-                </p>
-              </motion.div>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    You're saving ₦5,000!
+                  </p>
+                </motion.div>
             )}
 
             <motion.div className="text-center py-10 bg-background/30 rounded-2xl border border-accent/20 relative overflow-hidden">
@@ -242,7 +244,7 @@ const LoginPanel = () => {
                 </div>
                 {hasDiscount && (
                   <div className="text-sm text-muted-foreground mt-2 line-through opacity-60">
-                    Original: ₦25,000 (180 Stars)
+                    Original: ₦50,000 (360 Stars)
                   </div>
                 )}
               </div>
@@ -366,6 +368,24 @@ const LoginPanel = () => {
                 required
               />
             </motion.div>
+
+            {/* Forgot Password Link */}
+            {isLogin && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.75 }}
+                className="text-right"
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-xs text-muted-foreground hover:text-accent transition-colors"
+                >
+                  Forgot Password?
+                </button>
+              </motion.div>
+            )}
 
             {/* Primary Action Button */}
             <motion.div
@@ -532,6 +552,11 @@ const LoginPanel = () => {
       >
         Power isn't given — it's logged in.
       </motion.div>
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </motion.div>
   );
 };
