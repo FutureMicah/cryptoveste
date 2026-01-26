@@ -23,6 +23,7 @@ import { motion } from "framer-motion";
 import BankDetailsForm from "@/components/BankDetailsForm";
 import SessionTimeoutWarning from "@/components/SessionTimeoutWarning";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
+import SupportChatWidget from "@/components/SupportChatWidget";
 
 const TELEGRAM_GROUP = "https://t.me/+J0p7oeR8r4k3Yjg0";
 const TELEGRAM_CHANNEL = "https://t.me/BLACKTRADEACADEMYfreechannel";
@@ -615,6 +616,9 @@ const UserDashboard = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Support Chat Widget */}
+      <SupportChatWidget />
     </>
   );
 };

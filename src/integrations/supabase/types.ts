@@ -518,6 +518,72 @@ export type Database = {
           },
         ]
       }
+      support_messages: {
+        Row: {
+          admin_id: string | null
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          sender_type: string
+          user_id: string
+        }
+        Insert: {
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          sender_type?: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          sender_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          assigned_admin_id: string | null
+          created_at: string | null
+          id: string
+          last_message_at: string | null
+          priority: string | null
+          status: string
+          subject: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          priority?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          priority?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
