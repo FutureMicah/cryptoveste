@@ -165,13 +165,15 @@ export const SupportChatManagement = () => {
     if (!newMessage.trim() || !selectedTicket || sending) return;
     
     setSending(true);
+    const messageText = newMessage.trim();
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       const { error } = await supabase.from('support_messages').insert({
         user_id: selectedTicket.user_id,
-        message: newMessage.trim(),
+        message: messageText,
         sender_type: 'admin',
         admin_id: user.id,
       });
@@ -186,6 +188,19 @@ export const SupportChatManagement = () => {
           .update({ status: 'in_progress' })
           .eq('id', selectedTicket.id);
       }
+
+      // Send email notification to user (fire and forget)
+      supabase.functions.invoke('send-notification', {
+        body: {
+          userId: selectedTicket.user_id,
+          type: 'new_support_message',
+          data: {
+            message: messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText,
+          },
+        },
+      }).catch((emailError) => {
+        console.error('Failed to send user notification:', emailError);
+      });
     } catch (error: any) {
       toast({
         title: "Error",
