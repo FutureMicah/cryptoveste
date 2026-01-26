@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { 
   CheckCircle, XCircle, Clock, LogOut, Eye, RefreshCw, Users, 
-  DollarSign, Share2, LayoutDashboard, ArrowLeft, Calendar, Settings, Activity
+  DollarSign, Share2, LayoutDashboard, ArrowLeft, Calendar, Settings, Activity,
+  MessageCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -21,6 +22,7 @@ import RealtimeNotifications from "@/components/admin/RealtimeNotifications";
 import AdminSettings from "@/components/admin/AdminSettings";
 import ActivityLogsViewer from "@/components/admin/ActivityLogsViewer";
 import PayoutsManagement from "@/components/admin/PayoutsManagement";
+import SupportChatManagement from "@/components/admin/SupportChatManagement";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -332,6 +334,10 @@ const AdminDashboard = () => {
               <Activity className="w-4 h-4 mr-1 hidden sm:inline" />
               Logs
             </TabsTrigger>
+            <TabsTrigger value="support" className="flex-1 min-w-[80px]">
+              <MessageCircle className="w-4 h-4 mr-1 hidden sm:inline" />
+              Support
+            </TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 min-w-[80px]">
               <Settings className="w-4 h-4 mr-1 hidden sm:inline" />
               Settings
@@ -632,6 +638,11 @@ const AdminDashboard = () => {
           {/* Activity Logs Tab */}
           <TabsContent value="activity">
             <ActivityLogsViewer />
+          </TabsContent>
+
+          {/* Support Chat Tab */}
+          <TabsContent value="support">
+            <SupportChatManagement />
           </TabsContent>
 
           {/* Settings Tab */}

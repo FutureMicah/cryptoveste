@@ -1,0 +1,3 @@
+-- The security warning is about the trigger function, not the RLS policies
+-- The policies are properly restricted to admins and users
+-- No changes needed - the warning is about permissive policies but ours use has_role() checks
