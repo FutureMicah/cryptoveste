@@ -10,16 +10,18 @@ const corsHeaders = {
 };
 
 interface NotificationRequest {
-  userId: string;
-  type: "payment_approved" | "payment_rejected" | "kyc_status" | "interview_scheduled" | "interview_confirmed" | "referral_earnings" | "payout_processed" | "payout_rejected";
+  userId?: string;
+  adminEmail?: string;
+  type: "payment_approved" | "payment_rejected" | "kyc_status" | "interview_scheduled" | "interview_confirmed" | "referral_earnings" | "payout_processed" | "payout_rejected" | "new_support_message" | "admin_support_alert";
   data: Record<string, any>;
 }
 
 const TELEGRAM_GROUP = "https://t.me/+J0p7oeR8r4k3Yjg0";
 const TELEGRAM_CHANNEL = "https://t.me/BLACKTRADEACADEMYfreechannel";
 const SUPPORT_USERNAME = "@Futuremicah";
+const ADMIN_EMAILS = ["admin@blackpal.app", "futuremicah@gmail.com"]; // Add your admin emails
 
-const EMAIL_TEMPLATES = {
+const EMAIL_TEMPLATES: Record<string, (data: any) => { subject: string; html: string }> = {
   payment_approved: (data: any) => ({
     subject: "🎉 Payment Confirmed - Welcome to BlackPAL!",
     html: `
@@ -136,7 +138,7 @@ const EMAIL_TEMPLATES = {
             </div>
             
             <div style="text-align: center; margin-top: 24px;">
-              <a href="https://blackpal-ascend.lovable.app/signup" class="cta">Resubmit Payment Proof →</a>
+              <a href="https://blackpal.lovable.app/signup" class="cta">Resubmit Payment Proof →</a>
             </div>
             
             <p class="support">Need help? Contact our support: <a href="https://t.me/${SUPPORT_USERNAME.replace('@', '')}">${SUPPORT_USERNAME}</a></p>
@@ -454,6 +456,103 @@ const EMAIL_TEMPLATES = {
       </html>
     `,
   }),
+
+  new_support_message: (data: any) => ({
+    subject: "💬 New Support Message - BlackPAL",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #ffffff; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+          .header { text-align: center; margin-bottom: 40px; }
+          .logo { font-size: 32px; font-weight: bold; color: #D4AF37; }
+          .message-badge { background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; padding: 12px 24px; border-radius: 50px; display: inline-block; margin: 20px 0; font-weight: 600; }
+          .content { background: #111111; border-radius: 16px; padding: 32px; border: 1px solid #222; }
+          .message-box { background: #1a1a2e; border: 1px solid #2d2d44; border-radius: 12px; padding: 20px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 40px; color: #666; font-size: 14px; }
+          .cta { display: inline-block; background: linear-gradient(135deg, #D4AF37, #B8860B); color: #000; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">BlackPAL</div>
+            <div class="message-badge">💬 New Message</div>
+          </div>
+          <div class="content">
+            <h2 style="text-align: center; margin-bottom: 24px;">You have a new support message!</h2>
+            <div class="message-box">
+              <p style="color: #aaa; font-size: 12px; margin-bottom: 8px;">Message:</p>
+              <p style="color: #fff;">${data.message || 'New message from support team.'}</p>
+            </div>
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://blackpal.lovable.app/dashboard" class="cta">View Message →</a>
+            </div>
+          </div>
+          <div class="footer">
+            <p>© 2024 BlackPAL. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  }),
+
+  admin_support_alert: (data: any) => ({
+    subject: "🔔 New Support Message from " + (data.userName || 'User') + " - BlackPAL Admin",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #ffffff; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+          .header { text-align: center; margin-bottom: 40px; }
+          .logo { font-size: 32px; font-weight: bold; color: #D4AF37; }
+          .alert-badge { background: linear-gradient(135deg, #F59E0B, #D97706); color: white; padding: 12px 24px; border-radius: 50px; display: inline-block; margin: 20px 0; font-weight: 600; }
+          .content { background: #111111; border-radius: 16px; padding: 32px; border: 1px solid #222; }
+          .user-info { background: #1a1a2e; border: 1px solid #2d2d44; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+          .message-box { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 20px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 40px; color: #666; font-size: 14px; }
+          .cta { display: inline-block; background: linear-gradient(135deg, #D4AF37, #B8860B); color: #000; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">BlackPAL Admin</div>
+            <div class="alert-badge">🔔 New Support Request</div>
+          </div>
+          <div class="content">
+            <h2 style="text-align: center; margin-bottom: 24px;">New Support Message Received</h2>
+            
+            <div class="user-info">
+              <p style="color: #aaa; font-size: 12px; margin-bottom: 4px;">From:</p>
+              <p style="color: #fff; font-weight: 600; margin: 0;">${data.userName || 'Unknown User'}</p>
+              <p style="color: #888; font-size: 14px; margin: 4px 0 0 0;">${data.userEmail || ''}</p>
+            </div>
+            
+            <div class="message-box">
+              <p style="color: #aaa; font-size: 12px; margin-bottom: 8px;">Message:</p>
+              <p style="color: #fff; line-height: 1.6;">${data.message || 'No message content.'}</p>
+              <p style="color: #666; font-size: 12px; margin-top: 12px;">${new Date().toLocaleString()}</p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="https://blackpal.lovable.app/admin" class="cta">Reply in Admin Panel →</a>
+            </div>
+          </div>
+          <div class="footer">
+            <p>© 2024 BlackPAL. All rights reserved.</p>
+            <p style="color: #444;">This is an admin notification. Please respond promptly.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  }),
 };
 
 serve(async (req) => {
@@ -467,7 +566,34 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { userId, type, data }: NotificationRequest = await req.json();
+    const { userId, adminEmail, type, data }: NotificationRequest = await req.json();
+
+    console.log("Notification request:", { userId, adminEmail, type, data });
+
+    // Handle admin notifications
+    if (type === "admin_support_alert") {
+      const template = EMAIL_TEMPLATES[type](data);
+      const adminEmails = adminEmail ? [adminEmail] : ADMIN_EMAILS;
+      
+      const emailResponse = await resend.emails.send({
+        from: "BlackPAL Alerts <alerts@blackpal.app>",
+        to: adminEmails,
+        subject: template.subject,
+        html: template.html,
+      });
+
+      console.log("Admin alert email sent:", emailResponse);
+
+      return new Response(
+        JSON.stringify({ success: true, emailId: emailResponse.data?.id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Handle user notifications
+    if (!userId) {
+      throw new Error("User ID is required for user notifications");
+    }
 
     // Get user email from auth
     const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);

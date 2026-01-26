@@ -140,15 +140,38 @@ export const SupportChatWidget = () => {
     if (!newMessage.trim() || !user || sending) return;
     
     setSending(true);
+    const messageText = newMessage.trim();
+    
     try {
       const { error } = await supabase.from('support_messages').insert({
         user_id: user.id,
-        message: newMessage.trim(),
+        message: messageText,
         sender_type: 'user',
       });
 
       if (error) throw error;
       setNewMessage('');
+
+      // Get user profile for email notification
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .single();
+
+      // Send admin email notification (fire and forget)
+      supabase.functions.invoke('send-notification', {
+        body: {
+          type: 'admin_support_alert',
+          data: {
+            userName: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'User',
+            userEmail: user.email,
+            message: messageText,
+          },
+        },
+      }).catch((emailError) => {
+        console.error('Failed to send admin notification:', emailError);
+      });
     } catch (error: any) {
       toast({
         title: "Error",

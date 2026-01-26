@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
   LogOut, Copy, ExternalLink, Users, DollarSign, 
   CheckCircle, XCircle, Share2, MessageCircle, Wallet,
   ArrowUpRight, RefreshCw, AlertCircle, Banknote, Building2, 
-  User, Shield, Hash
+  User, Shield, Hash, Bell, BellOff
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -24,6 +24,7 @@ import BankDetailsForm from "@/components/BankDetailsForm";
 import SessionTimeoutWarning from "@/components/SessionTimeoutWarning";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import SupportChatWidget from "@/components/SupportChatWidget";
+import usePushNotifications from "@/hooks/usePushNotifications";
 
 const TELEGRAM_GROUP = "https://t.me/+J0p7oeR8r4k3Yjg0";
 const TELEGRAM_CHANNEL = "https://t.me/BLACKTRADEACADEMYfreechannel";
@@ -46,10 +47,35 @@ const UserDashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [showBankDetails, setShowBankDetails] = useState(false);
   const [memberNumber, setMemberNumber] = useState<number | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  
+  // Push notifications hook
+  const { requestPermission } = usePushNotifications(user?.id || null);
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Check notification permission status
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationsEnabled(Notification.permission === 'granted');
+    }
+  }, []);
+
+  const toggleNotifications = useCallback(async () => {
+    if (notificationsEnabled) {
+      toast.info("Notifications are enabled. To disable, adjust your browser settings.");
+    } else {
+      const granted = await requestPermission();
+      setNotificationsEnabled(granted);
+      if (granted) {
+        toast.success("Push notifications enabled!");
+      } else {
+        toast.error("Please allow notifications in your browser settings.");
+      }
+    }
+  }, [notificationsEnabled, requestPermission]);
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -331,13 +357,26 @@ const UserDashboard = () => {
               <p className="text-sm text-muted-foreground">Your BlackPAL Dashboard</p>
             </div>
             <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={toggleNotifications}
+                className={notificationsEnabled ? "text-green-500" : "text-muted-foreground"}
+              >
+                {notificationsEnabled ? (
+                  <Bell className="w-4 h-4 mr-1" />
+                ) : (
+                  <BellOff className="w-4 h-4 mr-1" />
+                )}
+                <span className="hidden sm:inline">{notificationsEnabled ? "Notifications On" : "Enable Alerts"}</span>
+              </Button>
               <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
                 <RefreshCw className={`w-4 h-4 mr-1 ${refreshing ? "animate-spin" : ""}`} />
-                Refresh
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-1" />
-                Logout
+                <span className="hidden sm:inline">Logout</span>
               </Button>
             </div>
           </div>
