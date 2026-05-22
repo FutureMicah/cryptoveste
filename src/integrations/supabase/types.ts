@@ -145,6 +145,48 @@ export type Database = {
           },
         ]
       }
+      deposits: {
+        Row: {
+          admin_notes: string | null
+          amount_usd: number
+          created_at: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          screenshot_url: string | null
+          sender_wallet: string | null
+          status: string
+          tx_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount_usd: number
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screenshot_url?: string | null
+          sender_wallet?: string | null
+          status?: string
+          tx_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount_usd?: number
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screenshot_url?: string | null
+          sender_wallet?: string | null
+          status?: string
+          tx_hash?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       document_uploads: {
         Row: {
           created_at: string | null
@@ -184,6 +226,48 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      investment_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_days: number
+          id: string
+          is_active: boolean
+          max_amount: number
+          min_amount: number
+          name: string
+          roi_percent: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          max_amount?: number
+          min_amount?: number
+          name: string
+          roi_percent?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          max_amount?: number
+          min_amount?: number
+          name?: string
+          roi_percent?: number
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -584,6 +668,56 @@ export type Database = {
         }
         Relationships: []
       }
+      user_investments: {
+        Row: {
+          amount: number
+          created_at: string
+          ends_at: string
+          expected_return: number
+          id: string
+          plan_id: string
+          starts_at: string
+          status: string
+          total_paid: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          ends_at: string
+          expected_return: number
+          id?: string
+          plan_id: string
+          starts_at?: string
+          status?: string
+          total_paid?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          ends_at?: string
+          expected_return?: number
+          id?: string
+          plan_id?: string
+          starts_at?: string
+          status?: string
+          total_paid?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_investments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "investment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -602,6 +736,81 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      wallets: {
+        Row: {
+          balance_usd: number
+          created_at: string
+          id: string
+          total_earned: number
+          total_invested: number
+          total_withdrawn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance_usd?: number
+          created_at?: string
+          id?: string
+          total_earned?: number
+          total_invested?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance_usd?: number
+          created_at?: string
+          id?: string
+          total_earned?: number
+          total_invested?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      withdrawals: {
+        Row: {
+          admin_notes: string | null
+          amount_usd: number
+          created_at: string
+          id: string
+          network: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          tx_hash: string | null
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount_usd: number
+          created_at?: string
+          id?: string
+          network?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tx_hash?: string | null
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount_usd?: number
+          created_at?: string
+          id?: string
+          network?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tx_hash?: string | null
+          user_id?: string
+          wallet_address?: string
         }
         Relationships: []
       }
@@ -640,6 +849,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      credit_investment_roi: {
+        Args: { _amount: number; _investment_id: string }
+        Returns: undefined
+      }
       generate_referral_code: { Args: never; Returns: string }
       has_role: {
         Args: {
