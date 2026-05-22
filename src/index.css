@@ -118,4 +118,10 @@
     backdrop-filter: blur(20px);
     border: 1px solid hsl(var(--border));
   }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+}
+    backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--border));
+  }
 }
