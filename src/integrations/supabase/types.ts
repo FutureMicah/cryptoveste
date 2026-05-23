@@ -853,6 +853,13 @@ export type Database = {
         Args: { _amount: number; _investment_id: string }
         Returns: undefined
       }
+      distribute_due_roi: {
+        Args: never
+        Returns: {
+          credited: number
+          investment_id: string
+        }[]
+      }
       generate_referral_code: { Args: never; Returns: string }
       has_role: {
         Args: {

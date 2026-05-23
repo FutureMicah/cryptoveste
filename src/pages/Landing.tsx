@@ -43,8 +43,11 @@ const Landing = () => {
             CryptoVest
           </Link>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => navigate("/auth")} className="rounded-full">Sign in</Button>
-            <Button onClick={goStart} className="rounded-full gradient-lime text-primary-foreground hover:opacity-90 border-0">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="rounded-full">
+              <ShieldCheck className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Admin</span>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/auth")} className="rounded-full">Sign in</Button>
+            <Button size="sm" onClick={goStart} className="rounded-full gradient-lime text-primary-foreground hover:opacity-90 border-0">
               Get Started
             </Button>
           </div>

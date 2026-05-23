@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, TrendingUp, Check } from "lucide-react";
 
 interface Plan {
   id: string;
@@ -17,7 +16,7 @@ interface Plan {
   duration_days: number;
 }
 
-const InvestPanel = ({ userId, balance, onDone }: { userId: string; balance: number; onDone: () => void }) => {
+const InvestPanel = ({ userId, balance, onDone }: { userId: string; balance: number; onDone?: () => void }) => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selected, setSelected] = useState<Plan | null>(null);
   const [amount, setAmount] = useState("");
@@ -29,62 +28,82 @@ const InvestPanel = ({ userId, balance, onDone }: { userId: string; balance: num
   }, []);
 
   const invest = async () => {
-    if (!selected) return;
+    if (!selected) return toast.error("Select a plan");
     const amt = parseFloat(amount);
     if (!amt || amt < selected.min_amount || amt > selected.max_amount) {
-      return toast.error(`Amount must be between $${selected.min_amount} and $${selected.max_amount}`);
+      return toast.error(`Amount must be $${selected.min_amount} – $${selected.max_amount}`);
     }
     if (amt > balance) return toast.error("Insufficient balance. Deposit first.");
 
     setLoading(true);
     const { error } = await supabase.from("user_investments").insert({
-      user_id: userId,
-      plan_id: selected.id,
-      amount: amt,
-      expected_return: 0, // overridden by trigger
-      ends_at: new Date().toISOString(), // overridden by trigger
+      user_id: userId, plan_id: selected.id, amount: amt, expected_return: 0, ends_at: new Date().toISOString(),
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Investment created!");
-    setSelected(null);
-    setAmount("");
-    onDone();
+    toast.success(`${selected.name} plan started!`);
+    setSelected(null); setAmount("");
+    onDone?.();
   };
+
+  const profit = selected && amount ? (parseFloat(amount) * selected.roi_percent) / 100 : 0;
 
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-lg">Choose a plan</h3>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {plans.map((p) => (
-          <Card
-            key={p.id}
-            onClick={() => { setSelected(p); setAmount(p.min_amount.toString()); }}
-            className={`p-5 cursor-pointer border-2 transition-all ${selected?.id === p.id ? "border-primary bg-primary/5" : "border-border/50 bg-card/50 hover:border-primary/40"}`}
-          >
-            <h4 className="font-bold">{p.name}</h4>
-            <div className="text-3xl font-bold text-primary mt-2">{p.roi_percent}%</div>
-            <div className="text-xs text-muted-foreground">in {p.duration_days} days</div>
-            <div className="text-xs mt-3 text-muted-foreground">${p.min_amount} – ${p.max_amount.toLocaleString()}</div>
-          </Card>
-        ))}
+      <div className="space-y-3">
+        {plans.map((p) => {
+          const isSelected = selected?.id === p.id;
+          return (
+            <button
+              key={p.id}
+              onClick={() => { setSelected(p); setAmount(p.min_amount.toString()); }}
+              className={`w-full text-left rounded-[24px] p-5 transition-all border-2 ${
+                isSelected ? "surface-lime border-transparent" : "bg-card border-border hover:border-primary/40"
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-base">{p.name}</h3>
+                    {isSelected && <span className="w-5 h-5 rounded-full bg-black/80 text-white grid place-items-center"><Check className="w-3 h-3" /></span>}
+                  </div>
+                  <p className={`text-xs mt-0.5 ${isSelected ? "opacity-70" : "text-muted-foreground"}`}>
+                    ${p.min_amount} – ${p.max_amount.toLocaleString()} · {p.duration_days}d
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold">{p.roi_percent}%</div>
+                  <div className={`text-[10px] uppercase font-semibold ${isSelected ? "opacity-70" : "text-muted-foreground"}`}>ROI</div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {selected && (
-        <Card className="p-5 bg-card/50 border-border/50 space-y-4">
-          <div>
-            <Label>Amount to invest in {selected.name} (USD)</Label>
-            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} min={selected.min_amount} max={selected.max_amount} />
-            <p className="text-xs text-muted-foreground mt-1">Available balance: ${balance.toFixed(2)}</p>
+        <div className="rounded-3xl bg-card border border-border p-5 space-y-4 sticky bottom-24">
+          <div className="space-y-2">
+            <Label className="text-xs">Amount to invest (USD)</Label>
+            <Input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)}
+              min={selected.min_amount} max={selected.max_amount} className="rounded-xl h-12 text-lg font-semibold" />
+            <p className="text-[11px] text-muted-foreground">Available: ${balance.toFixed(2)}</p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={invest} disabled={loading} className="flex-1">
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Confirm investment
-            </Button>
-            <Button variant="outline" onClick={() => setSelected(null)}>Cancel</Button>
+          <div className="grid grid-cols-2 gap-3 text-center">
+            <div className="rounded-2xl bg-muted/40 p-3">
+              <p className="text-[10px] uppercase text-muted-foreground">Profit</p>
+              <p className="font-bold text-primary">+${profit.toFixed(2)}</p>
+            </div>
+            <div className="rounded-2xl bg-muted/40 p-3">
+              <p className="text-[10px] uppercase text-muted-foreground">Return in {selected.duration_days}d</p>
+              <p className="font-bold">${(parseFloat(amount || "0") + profit).toFixed(2)}</p>
+            </div>
           </div>
-        </Card>
+          <Button onClick={invest} disabled={loading} className="w-full h-12 rounded-full gradient-lime text-primary-foreground border-0 font-semibold">
+            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <TrendingUp className="w-4 h-4 mr-2" /> Start investing
+          </Button>
+        </div>
       )}
     </div>
   );
