@@ -10,7 +10,6 @@ interface Deposit {
   id: string;
   user_id: string;
   amount_usd: number;
-  tx_hash: string;
   sender_wallet: string | null;
   screenshot_url: string | null;
   status: string;
@@ -20,7 +19,6 @@ interface Deposit {
 const DepositsApproval = () => {
   const [items, setItems] = useState<Deposit[]>([]);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
-  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
 
   const load = async () => {
     let q = supabase.from("deposits").select("*").order("created_at", { ascending: false });
@@ -30,21 +28,15 @@ const DepositsApproval = () => {
   };
   useEffect(() => { load(); }, [filter]);
 
-  const viewScreenshot = async (path: string, id: string) => {
-    if (signedUrls[id]) { window.open(signedUrls[id], "_blank"); return; }
+  const viewScreenshot = async (path: string) => {
     const { data } = await supabase.storage.from("payment-screenshots").createSignedUrl(path, 3600);
-    if (data?.signedUrl) {
-      setSignedUrls((s) => ({ ...s, [id]: data.signedUrl }));
-      window.open(data.signedUrl, "_blank");
-    }
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
 
   const decide = async (id: string, status: "approved" | "rejected") => {
     const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase.from("deposits").update({
-      status,
-      reviewed_by: user?.id,
-      reviewed_at: new Date().toISOString(),
+      status, reviewed_by: user?.id, reviewed_at: new Date().toISOString(),
     }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(`Deposit ${status}`);
@@ -62,28 +54,34 @@ const DepositsApproval = () => {
       </div>
 
       {items.length === 0 ? (
-        <Card className="p-8 text-center text-muted-foreground">No deposits.</Card>
+        <Card className="p-8 text-center text-muted-foreground rounded-2xl">No deposits.</Card>
       ) : (
         <div className="space-y-2">
           {items.map((d) => (
-            <Card key={d.id} className="p-4 bg-card/50 border-border/50">
-              <div className="flex flex-wrap items-center gap-4 justify-between">
-                <div className="flex-1 min-w-[200px]">
+            <Card key={d.id} className="p-4 bg-card border-border rounded-2xl">
+              <div className="flex flex-wrap items-center gap-3 justify-between">
+                <div className="flex-1 min-w-[180px]">
                   <div className="font-semibold text-lg">${Number(d.amount_usd).toFixed(2)}</div>
-                  <div className="text-xs text-muted-foreground font-mono truncate max-w-md">tx: {d.tx_hash}</div>
-                  <div className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleString()} · user {d.user_id.slice(0, 8)}</div>
+                  {d.sender_wallet && (
+                    <div className="text-[11px] text-muted-foreground font-mono truncate">from {d.sender_wallet}</div>
+                  )}
+                  <div className="text-[11px] text-muted-foreground">{new Date(d.created_at).toLocaleString()} · user {d.user_id.slice(0, 8)}</div>
                 </div>
                 <Badge>{d.status}</Badge>
                 <div className="flex gap-2">
                   {d.screenshot_url && (
-                    <Button size="sm" variant="outline" onClick={() => viewScreenshot(d.screenshot_url!, d.id)}>
+                    <Button size="sm" variant="outline" onClick={() => viewScreenshot(d.screenshot_url!)}>
                       <Eye className="w-4 h-4 mr-1" /> Proof
                     </Button>
                   )}
                   {d.status === "pending" && (
                     <>
-                      <Button size="sm" onClick={() => decide(d.id, "approved")}><Check className="w-4 h-4" /></Button>
-                      <Button size="sm" variant="destructive" onClick={() => decide(d.id, "rejected")}><X className="w-4 h-4" /></Button>
+                      <Button size="sm" onClick={() => decide(d.id, "approved")} className="gradient-lime border-0 text-primary-foreground">
+                        <Check className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => decide(d.id, "rejected")}>
+                        <X className="w-4 h-4" />
+                      </Button>
                     </>
                   )}
                 </div>
