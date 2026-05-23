@@ -1,17 +1,15 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Copy, Upload, Loader2 } from "lucide-react";
+import { Copy, Upload, Loader2, ShieldCheck } from "lucide-react";
 
 const USDT_ADDRESS = "0x37e39CcC88bfcD0a78087DD1188619530C355a95";
 
-const DepositPanel = ({ userId, onDone }: { userId: string; onDone: () => void }) => {
+const DepositPanel = ({ userId, onDone }: { userId: string; onDone?: () => void }) => {
   const [amount, setAmount] = useState("");
-  const [txHash, setTxHash] = useState("");
   const [senderWallet, setSenderWallet] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,7 +22,6 @@ const DepositPanel = ({ userId, onDone }: { userId: string; onDone: () => void }
   const submit = async () => {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return toast.error("Enter a valid amount");
-    if (!txHash) return toast.error("Enter the transaction hash");
     if (!file) return toast.error("Upload payment screenshot");
 
     setLoading(true);
@@ -37,16 +34,15 @@ const DepositPanel = ({ userId, onDone }: { userId: string; onDone: () => void }
       const { error } = await supabase.from("deposits").insert({
         user_id: userId,
         amount_usd: amt,
-        tx_hash: txHash,
         sender_wallet: senderWallet || null,
         screenshot_url: path,
         status: "pending",
       });
       if (error) throw error;
 
-      toast.success("Deposit submitted! Awaiting admin approval.");
-      setAmount(""); setTxHash(""); setSenderWallet(""); setFile(null);
-      onDone();
+      toast.success("Deposit submitted. Admin will verify shortly.");
+      setAmount(""); setSenderWallet(""); setFile(null);
+      onDone?.();
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -55,51 +51,45 @@ const DepositPanel = ({ userId, onDone }: { userId: string; onDone: () => void }
   };
 
   return (
-    <Card className="p-6 bg-card/50 border-border/50 space-y-5">
-      <div>
-        <h3 className="font-semibold text-lg mb-1">Deposit USDT (BEP20)</h3>
-        <p className="text-sm text-muted-foreground">Send USDT on Binance Smart Chain to the address below, then submit proof.</p>
-      </div>
-
-      <div className="bg-background/50 rounded-lg p-4 border border-primary/20">
-        <div className="text-xs text-muted-foreground mb-2">USDT BEP20 Address</div>
-        <div className="flex items-center gap-2">
-          <code className="flex-1 text-xs font-mono bg-muted/30 p-2.5 rounded break-all">{USDT_ADDRESS}</code>
-          <Button size="icon" variant="outline" onClick={copy}><Copy className="w-4 h-4" /></Button>
+    <div className="space-y-4">
+      <div className="surface-lime rounded-[28px] p-5">
+        <p className="text-xs font-semibold opacity-70 uppercase tracking-wide">USDT BEP20 wallet</p>
+        <div className="mt-2 flex items-center gap-2 bg-black/15 rounded-2xl p-3">
+          <code className="flex-1 text-[11px] font-mono break-all">{USDT_ADDRESS}</code>
+          <button onClick={copy} className="w-9 h-9 rounded-full bg-black/80 text-white grid place-items-center shrink-0">
+            <Copy className="w-4 h-4" />
+          </button>
         </div>
-        <p className="text-xs text-yellow-500 mt-2">⚠️ Only send USDT on BEP20. Other networks will be lost.</p>
+        <p className="text-[11px] mt-3 opacity-80">⚠️ Send USDT on BEP20 (Binance Smart Chain) only. Other networks will be lost.</p>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="rounded-3xl bg-card border border-border p-5 space-y-4">
         <div className="space-y-2">
-          <Label>Amount Sent (USD)</Label>
-          <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 100" />
+          <Label className="text-xs">Amount sent (USD)</Label>
+          <Input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 100" className="rounded-xl h-12" />
         </div>
         <div className="space-y-2">
-          <Label>Your Wallet (optional)</Label>
-          <Input value={senderWallet} onChange={(e) => setSenderWallet(e.target.value)} placeholder="0x..." />
+          <Label className="text-xs">Sender wallet (optional)</Label>
+          <Input value={senderWallet} onChange={(e) => setSenderWallet(e.target.value)} placeholder="0x..." className="rounded-xl h-12" />
         </div>
+        <div className="space-y-2">
+          <Label className="text-xs">Payment proof screenshot</Label>
+          <label className="flex items-center gap-3 p-4 border-2 border-dashed border-border rounded-2xl cursor-pointer hover:border-primary/60 transition">
+            <Upload className="w-5 h-5 text-primary shrink-0" />
+            <span className="text-sm truncate">{file ? file.name : "Tap to upload screenshot"}</span>
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          </label>
+        </div>
+        <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-muted/40 rounded-xl p-3">
+          <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+          <span>Verification is performed manually by our admin. Your balance is credited once approved.</span>
+        </div>
+        <Button onClick={submit} disabled={loading} className="w-full h-12 rounded-full gradient-lime text-primary-foreground border-0 font-semibold">
+          {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          Submit deposit
+        </Button>
       </div>
-
-      <div className="space-y-2">
-        <Label>Transaction Hash</Label>
-        <Input value={txHash} onChange={(e) => setTxHash(e.target.value)} placeholder="0x..." />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Payment Screenshot</Label>
-        <label className="flex items-center gap-3 p-4 border-2 border-dashed border-border/50 rounded-lg cursor-pointer hover:border-primary/50 transition">
-          <Upload className="w-5 h-5 text-primary" />
-          <span className="text-sm">{file ? file.name : "Click to upload screenshot"}</span>
-          <input type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-        </label>
-      </div>
-
-      <Button onClick={submit} disabled={loading} className="w-full">
-        {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-        Submit Deposit
-      </Button>
-    </Card>
+    </div>
   );
 };
 
