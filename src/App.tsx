@@ -6,6 +6,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import InvestPage from "./pages/InvestPage";
+import DepositPage from "./pages/DepositPage";
+import WithdrawPage from "./pages/WithdrawPage";
+import HistoryPage from "./pages/HistoryPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -22,6 +26,10 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/invest" element={<InvestPage />} />
+          <Route path="/deposit" element={<DepositPage />} />
+          <Route path="/withdraw" element={<WithdrawPage />} />
+          <Route path="/history" element={<HistoryPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
