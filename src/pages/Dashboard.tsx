@@ -65,54 +65,54 @@ const Dashboard = () => {
   const masked = (v: number) => (hide ? "••••••" : `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 
   return (
-    <div className="min-h-screen gradient-dark-card text-foreground pb-28">
+    <div className="min-h-screen gradient-dark-card text-foreground pb-24 overflow-x-hidden">
       {/* Header */}
-      <header className="px-4 pt-5 pb-3 flex items-center justify-between max-w-md mx-auto">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full gradient-lime grid place-items-center font-bold text-primary-foreground text-lg">{initial}</div>
-          <div>
-            <p className="text-[11px] text-muted-foreground">Welcome back</p>
-            <p className="font-semibold text-sm">{firstName}</p>
+      <header className="px-3 pt-4 pb-2 flex items-center justify-between gap-2 max-w-md mx-auto">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-9 h-9 rounded-full gradient-lime grid place-items-center font-bold text-primary-foreground text-sm shrink-0">{initial}</div>
+          <div className="min-w-0">
+            <p className="text-[10px] text-muted-foreground leading-tight">Welcome back</p>
+            <p className="font-semibold text-xs truncate">{firstName}</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => navigate("/admin")} className="w-10 h-10 rounded-full bg-card border border-border grid place-items-center" aria-label="Admin">
+        <div className="flex gap-1.5 shrink-0">
+          <button onClick={() => navigate("/admin")} className="w-9 h-9 rounded-full bg-card border border-border grid place-items-center" aria-label="Admin">
             <Shield className="w-4 h-4" />
           </button>
-          <button className="w-10 h-10 rounded-full bg-card border border-border grid place-items-center" aria-label="Notifications">
+          <button className="w-9 h-9 rounded-full bg-card border border-border grid place-items-center" aria-label="Notifications">
             <Bell className="w-4 h-4" />
           </button>
-          <button onClick={() => signOut().then(() => navigate("/"))} className="w-10 h-10 rounded-full bg-card border border-border grid place-items-center" aria-label="Sign out">
+          <button onClick={() => signOut().then(() => navigate("/"))} className="w-9 h-9 rounded-full bg-card border border-border grid place-items-center" aria-label="Sign out">
             <LogOut className="w-4 h-4" />
           </button>
         </div>
       </header>
 
-      <main className="px-4 max-w-md mx-auto space-y-4">
+      <main className="px-3 max-w-md mx-auto space-y-3">
         {/* Balance Card */}
-        <section className="surface-lime rounded-[28px] p-5 shadow-2xl">
+        <section className="surface-lime rounded-[24px] p-4 shadow-2xl">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold opacity-70 uppercase tracking-wide">Total balance</p>
-            <button onClick={() => setHide((h) => !h)} className="w-8 h-8 rounded-full bg-black/15 grid place-items-center">
-              {hide ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <p className="text-[10px] font-semibold opacity-70 uppercase tracking-wide">Total balance</p>
+            <button onClick={() => setHide((h) => !h)} className="w-7 h-7 rounded-full bg-black/15 grid place-items-center">
+              {hide ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             </button>
           </div>
-          <h1 className="text-4xl font-bold mt-1 tracking-tight">{masked(balance)}</h1>
-          <div className="flex gap-2 mt-2 text-[11px]">
-            <span className="bg-black/15 px-2 py-1 rounded-full">Earned {hide ? "•••" : `$${earned.toFixed(2)}`}</span>
-            <span className="bg-black/15 px-2 py-1 rounded-full">Invested {hide ? "•••" : `$${invested.toFixed(2)}`}</span>
+          <h1 className="text-2xl font-bold mt-1 tracking-tight truncate">{masked(balance)}</h1>
+          <div className="flex flex-wrap gap-1.5 mt-1.5 text-[10px]">
+            <span className="bg-black/15 px-2 py-0.5 rounded-full">Earned {hide ? "•••" : `$${earned.toFixed(2)}`}</span>
+            <span className="bg-black/15 px-2 py-0.5 rounded-full">Invested {hide ? "•••" : `$${invested.toFixed(2)}`}</span>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 mt-5">
+          <div className="grid grid-cols-4 gap-1.5 mt-4">
             {[
               { to: "/invest", I: TrendingUp, l: "Invest" },
               { to: "/deposit", I: ArrowDownLeft, l: "Deposit" },
-              { to: "/withdraw", I: ArrowUpRight, l: "Withdraw" },
+              { to: "/withdraw", I: ArrowUpRight, l: "Send" },
               { to: "/history", I: Plus, l: "History" },
             ].map((a) => (
-              <Link key={a.l} to={a.to} className="bg-black/15 hover:bg-black/25 transition rounded-2xl py-2.5 flex flex-col items-center gap-1">
-                <a.I className="w-4 h-4" />
-                <span className="text-[10px] font-semibold">{a.l}</span>
+              <Link key={a.l} to={a.to} className="bg-black/15 hover:bg-black/25 transition rounded-xl py-2 flex flex-col items-center gap-0.5">
+                <a.I className="w-3.5 h-3.5" />
+                <span className="text-[9px] font-semibold">{a.l}</span>
               </Link>
             ))}
           </div>
@@ -120,19 +120,19 @@ const Dashboard = () => {
 
         {/* Live prices */}
         <section>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-sm">Live prices</h3>
+          <div className="flex items-center justify-between mb-1.5">
+            <h3 className="font-semibold text-xs">Live prices</h3>
           </div>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-3 px-3 pb-1">
             {prices.map((p) => {
               const up = p.change24h >= 0;
               return (
-                <div key={p.id} className="min-w-[120px] bg-card border border-border rounded-2xl p-3">
-                  <div className="flex justify-between text-[11px]">
+                <div key={p.id} className="min-w-[100px] bg-card border border-border rounded-xl p-2.5">
+                  <div className="flex justify-between text-[10px]">
                     <span className="font-semibold">{p.symbol}</span>
                     <span className={up ? "text-[hsl(var(--success))]" : "text-destructive"}>{up ? "+" : ""}{p.change24h.toFixed(1)}%</span>
                   </div>
-                  <p className="text-sm font-bold mt-1">${p.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                  <p className="text-xs font-bold mt-0.5 truncate">${p.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                 </div>
               );
             })}
