@@ -11,6 +11,7 @@ import PlansManager from "@/components/admin/PlansManager";
 import DepositsApproval from "@/components/admin/DepositsApproval";
 import WithdrawalsApproval from "@/components/admin/WithdrawalsApproval";
 import InvestmentsManager from "@/components/admin/InvestmentsManager";
+import AnalyticsPanel from "@/components/admin/AnalyticsPanel";
 
 const ADMIN_EMAIL = "futuremicah4@gmail.com";
 
@@ -93,11 +94,13 @@ const AdminDashboard = () => {
             <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
             <TabsTrigger value="investments">Investments</TabsTrigger>
             <TabsTrigger value="plans">Plans</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
           <TabsContent value="deposits" className="mt-6"><DepositsApproval /></TabsContent>
           <TabsContent value="withdrawals" className="mt-6"><WithdrawalsApproval /></TabsContent>
           <TabsContent value="investments" className="mt-6"><InvestmentsManager /></TabsContent>
           <TabsContent value="plans" className="mt-6"><PlansManager /></TabsContent>
+          <TabsContent value="analytics" className="mt-6"><AnalyticsPanel /></TabsContent>
         </Tabs>
       </main>
     </div>
