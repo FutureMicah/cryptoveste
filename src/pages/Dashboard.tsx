@@ -141,14 +141,14 @@ const Dashboard = () => {
 
         {/* Active Investments */}
         <section>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-sm">Active investments</h3>
-            <Link to="/invest" className="text-xs text-primary font-semibold">+ New</Link>
+          <div className="flex items-center justify-between mb-1.5">
+            <h3 className="font-semibold text-xs">Active investments</h3>
+            <Link to="/invest" className="text-[11px] text-primary font-semibold">+ New</Link>
           </div>
           {activeInv.length === 0 ? (
-            <div className="rounded-3xl bg-card border border-border p-6 text-center">
-              <p className="text-sm text-muted-foreground mb-3">No active investments yet.</p>
-              <Button onClick={() => navigate("/invest")} size="sm" className="rounded-full gradient-lime border-0 text-primary-foreground">
+            <div className="rounded-2xl bg-card border border-border p-4 text-center">
+              <p className="text-xs text-muted-foreground mb-2">No active investments yet.</p>
+              <Button onClick={() => navigate("/invest")} size="sm" className="rounded-full gradient-lime border-0 text-primary-foreground h-8 text-xs">
                 Start investing
               </Button>
             </div>
@@ -159,17 +159,17 @@ const Dashboard = () => {
                 const accrued = Math.min(1, Math.max(0, elapsed)) * Number(inv.expected_return);
                 const pct = Math.min(100, (accrued / inv.expected_return) * 100);
                 return (
-                  <div key={inv.id} className="rounded-2xl bg-card border border-border p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <div>
-                        <p className="font-semibold text-sm">{inv.investment_plans?.name}</p>
-                        <p className="text-[11px] text-muted-foreground">${Number(inv.amount).toFixed(2)} → ${Number(inv.expected_return).toFixed(2)}</p>
+                  <div key={inv.id} className="rounded-2xl bg-card border border-border p-3">
+                    <div className="flex justify-between items-center gap-2 mb-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-xs truncate">{inv.investment_plans?.name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">${Number(inv.amount).toFixed(2)} → ${Number(inv.expected_return).toFixed(2)}</p>
                       </div>
-                      <Badge className="bg-primary/15 text-primary border-0">{inv.investment_plans?.roi_percent}%</Badge>
+                      <Badge className="bg-primary/15 text-primary border-0 text-[10px] shrink-0">{inv.investment_plans?.roi_percent}%</Badge>
                     </div>
-                    <Progress value={pct} className="h-1.5" />
-                    <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                      <span>Accruing ${accrued.toFixed(2)}</span>
+                    <Progress value={pct} className="h-1" />
+                    <div className="flex justify-between text-[9px] text-muted-foreground mt-1">
+                      <span>+${accrued.toFixed(2)}</span>
                       <span>Paid ${Number(inv.total_paid).toFixed(2)}</span>
                     </div>
                   </div>
@@ -181,28 +181,28 @@ const Dashboard = () => {
 
         {/* Transactions */}
         <section>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-sm">Recent transactions</h3>
-            <Link to="/history" className="text-xs text-primary font-semibold">View all ›</Link>
+          <div className="flex items-center justify-between mb-1.5">
+            <h3 className="font-semibold text-xs">Recent transactions</h3>
+            <Link to="/history" className="text-[11px] text-primary font-semibold">View all ›</Link>
           </div>
           {recentTx.length === 0 ? (
-            <div className="rounded-3xl bg-card border border-border p-6 text-center text-sm text-muted-foreground">
+            <div className="rounded-2xl bg-card border border-border p-4 text-center text-xs text-muted-foreground">
               No transactions yet.
             </div>
           ) : (
-            <div className="rounded-3xl bg-card border border-border divide-y divide-border overflow-hidden">
+            <div className="rounded-2xl bg-card border border-border divide-y divide-border overflow-hidden">
               {recentTx.map((tx) => {
                 const isDep = tx.kind === "deposit";
                 return (
-                  <div key={`${tx.kind}-${tx.id}`} className="flex items-center gap-3 p-3.5">
-                    <div className={`w-10 h-10 rounded-full grid place-items-center ${isDep ? "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]" : "bg-primary/15 text-primary"}`}>
-                      {isDep ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                  <div key={`${tx.kind}-${tx.id}`} className="flex items-center gap-2 p-3">
+                    <div className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${isDep ? "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]" : "bg-primary/15 text-primary"}`}>
+                      {isDep ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold">{isDep ? "Deposit" : "Withdrawal"}</p>
-                      <p className="text-[11px] text-muted-foreground capitalize">{tx.status} · {new Date(tx.created_at).toLocaleDateString()}</p>
+                      <p className="text-xs font-semibold">{isDep ? "Deposit" : "Withdrawal"}</p>
+                      <p className="text-[10px] text-muted-foreground capitalize truncate">{tx.status} · {new Date(tx.created_at).toLocaleDateString()}</p>
                     </div>
-                    <div className={`text-sm font-bold ${isDep ? "text-[hsl(var(--success))]" : ""}`}>
+                    <div className={`text-xs font-bold shrink-0 ${isDep ? "text-[hsl(var(--success))]" : ""}`}>
                       {isDep ? "+" : "−"}${Number(tx.amount_usd).toFixed(2)}
                     </div>
                   </div>
