@@ -4,7 +4,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Eye, Check, X } from "lucide-react";
+import { Eye, Check, X, Inbox } from "lucide-react";
+import ProofViewer from "./ProofViewer";
+import EmptyState, { ListSkeleton } from "@/components/EmptyState";
 
 interface Deposit {
   id: string;
@@ -17,8 +19,9 @@ interface Deposit {
 }
 
 const DepositsApproval = () => {
-  const [items, setItems] = useState<Deposit[]>([]);
+  const [items, setItems] = useState<Deposit[] | null>(null);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
+  const [proofPath, setProofPath] = useState<string | null>(null);
 
   const load = async () => {
     let q = supabase.from("deposits").select("*").order("created_at", { ascending: false });
@@ -27,11 +30,6 @@ const DepositsApproval = () => {
     setItems((data as Deposit[]) ?? []);
   };
   useEffect(() => { load(); }, [filter]);
-
-  const viewScreenshot = async (path: string) => {
-    const { data } = await supabase.storage.from("payment-screenshots").createSignedUrl(path, 3600);
-    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-  };
 
   const decide = async (id: string, status: "approved" | "rejected") => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -53,8 +51,10 @@ const DepositsApproval = () => {
         </div>
       </div>
 
-      {items.length === 0 ? (
-        <Card className="p-8 text-center text-muted-foreground rounded-2xl">No deposits.</Card>
+      {items === null ? (
+        <ListSkeleton rows={4} />
+      ) : items.length === 0 ? (
+        <EmptyState icon={Inbox} title={filter === "pending" ? "No pending deposits" : "No deposits yet"} description="Submitted deposits will show up here for review." />
       ) : (
         <div className="space-y-2">
           {items.map((d) => (
@@ -70,7 +70,7 @@ const DepositsApproval = () => {
                 <Badge>{d.status}</Badge>
                 <div className="flex gap-2">
                   {d.screenshot_url && (
-                    <Button size="sm" variant="outline" onClick={() => viewScreenshot(d.screenshot_url!)}>
+                    <Button size="sm" variant="outline" onClick={() => setProofPath(d.screenshot_url)}>
                       <Eye className="w-4 h-4 mr-1" /> Proof
                     </Button>
                   )}
@@ -90,6 +90,8 @@ const DepositsApproval = () => {
           ))}
         </div>
       )}
+
+      <ProofViewer path={proofPath} onClose={() => setProofPath(null)} />
     </div>
   );
 };

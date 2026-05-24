@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, TrendingUp, Check } from "lucide-react";
+import { Loader2, TrendingUp, Check, PackageOpen } from "lucide-react";
+import EmptyState, { CardSkeleton } from "@/components/EmptyState";
 
 interface Plan {
   id: string;
@@ -17,7 +18,7 @@ interface Plan {
 }
 
 const InvestPanel = ({ userId, balance, onDone }: { userId: string; balance: number; onDone?: () => void }) => {
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [plans, setPlans] = useState<Plan[] | null>(null);
   const [selected, setSelected] = useState<Plan | null>(null);
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,36 +51,42 @@ const InvestPanel = ({ userId, balance, onDone }: { userId: string; balance: num
 
   return (
     <div className="space-y-4">
-      <div className="space-y-3">
-        {plans.map((p) => {
-          const isSelected = selected?.id === p.id;
-          return (
-            <button
-              key={p.id}
-              onClick={() => { setSelected(p); setAmount(p.min_amount.toString()); }}
-              className={`w-full text-left rounded-[24px] p-5 transition-all border-2 ${
-                isSelected ? "surface-lime border-transparent" : "bg-card border-border hover:border-primary/40"
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-base">{p.name}</h3>
-                    {isSelected && <span className="w-5 h-5 rounded-full bg-black/80 text-white grid place-items-center"><Check className="w-3 h-3" /></span>}
+      {plans === null ? (
+        <div className="space-y-3"><CardSkeleton height="h-24" /><CardSkeleton height="h-24" /><CardSkeleton height="h-24" /></div>
+      ) : plans.length === 0 ? (
+        <EmptyState icon={PackageOpen} title="No plans available" description="Investment plans will appear here once published by the admin." tone="lime" />
+      ) : (
+        <div className="space-y-3">
+          {plans.map((p) => {
+            const isSelected = selected?.id === p.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => { setSelected(p); setAmount(p.min_amount.toString()); }}
+                className={`w-full text-left rounded-[24px] p-5 transition-all border-2 ${
+                  isSelected ? "surface-lime border-transparent" : "bg-card border-border hover:border-primary/40"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-base">{p.name}</h3>
+                      {isSelected && <span className="w-5 h-5 rounded-full bg-black/80 text-white grid place-items-center"><Check className="w-3 h-3" /></span>}
+                    </div>
+                    <p className={`text-xs mt-0.5 ${isSelected ? "opacity-70" : "text-muted-foreground"}`}>
+                      ${p.min_amount} – ${p.max_amount.toLocaleString()} · {p.duration_days}d
+                    </p>
                   </div>
-                  <p className={`text-xs mt-0.5 ${isSelected ? "opacity-70" : "text-muted-foreground"}`}>
-                    ${p.min_amount} – ${p.max_amount.toLocaleString()} · {p.duration_days}d
-                  </p>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold">{p.roi_percent}%</div>
+                    <div className={`text-[10px] uppercase font-semibold ${isSelected ? "opacity-70" : "text-muted-foreground"}`}>ROI</div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold">{p.roi_percent}%</div>
-                  <div className={`text-[10px] uppercase font-semibold ${isSelected ? "opacity-70" : "text-muted-foreground"}`}>ROI</div>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {selected && (
         <div className="rounded-3xl bg-card border border-border p-5 space-y-4 sticky bottom-24">
