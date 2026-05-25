@@ -1,69 +1,70 @@
+# Build Plan
 
-# Crypto Investment Platform — Rebuild Plan
+## 1. Multi-crypto deposit addresses
+- Add a `deposit_addresses` table (currency, network, address, qr_url, is_active, min_amount) — admin editable.
+- Seed defaults: USDT BEP20 (existing), BTC, ETH, USDT TRC20.
+- `DepositPanel`: currency selector chips → shows the matching address + QR + min amount. Screenshot upload stays mandatory; no tx hash field (manual review).
+- Admin **Wallets** tab to add/edit/disable any address at any time.
 
-Reuse: Supabase auth (email/password + Google), `profiles`, `user_roles`, `payment-screenshots` storage bucket, USDT BEP20 wallet `0x37e39CcC88bfcD0a78087DD1188619530C355a95`, admin login (`futuremicah4@gmail.com` / PIN 4303).
+## 2. KYC (mandatory for withdrawal, admin-only approval)
+- New `user_kyc` table: full_name, dob, country, id_type, id_number, id_front_url, id_back_url, selfie_url, status (pending/approved/rejected), reviewed_by, reviewed_at, rejection_reason.
+- Storage bucket `kyc-documents` (private, user-scoped paths).
+- User `/kyc` page to submit and view status.
+- `WithdrawPage` blocks submission unless KYC = approved, with a CTA to /kyc.
+- Admin **KYC** tab: review, view docs (ProofViewer), approve/reject with reason.
 
-Replace: landing page, signup flow, user dashboard, admin dashboard, referral/enrollment logic.
+## 3. Profile + avatar upload
+- Add `avatar_url`, `phone`, `country` to profiles.
+- Storage bucket `avatars` (public).
+- New `/profile` page (mobile, lime aesthetic): avatar upload, name, phone, country, bank details, change password, sign out.
+- Avatar shown in AppShell header.
 
-## 1. Database (migration)
+## 4. Full admin control over user accounts
+New admin tabs/screens:
+- **Users**: list all users with search; per-user drawer showing wallet, investments, KYC, deposits, withdrawals. Actions:
+  - Manual credit/debit balance (writes a `manual_adjustments` row + updates wallet via SECURITY DEFINER function `admin_adjust_balance`).
+  - Create investment on user's behalf (any plan, any amount — uses SECURITY DEFINER `admin_create_investment` bypassing balance check).
+  - Cancel/refund an active investment (`admin_cancel_investment` — refunds remaining principal to wallet).
+  - Ban / unban user (adds `is_banned` to profiles; auth gate redirects banned users to a "suspended" screen and signs them out).
+  - Reset/force sign-out (revoke sessions via admin API — or set `is_banned` flag that client honors).
+- **Deposits/Withdrawals**: keep existing approve/reject, plus admin can manually create a deposit for a user (top-up).
+- **Plans**: existing CRUD continues.
+- **Investments**: existing list + `distribute_due_roi` + new per-row cancel.
 
-New tables:
-- `investment_plans` — name, description, min_amount, max_amount, roi_percent, duration_days, is_active. Admin-managed only.
-- `user_investments` — user_id, plan_id, amount, expected_return, status (active/completed/cancelled), starts_at, ends_at, total_paid.
-- `deposits` — user_id, amount_usd, tx_hash, sender_wallet, screenshot_url, status (pending/approved/rejected), admin_notes, reviewed_by, reviewed_at.
-- `withdrawals` — user_id, amount_usd, wallet_address, status (pending/approved/rejected/paid), admin_notes, reviewed_by, reviewed_at.
-- `wallets` — user_id (unique), balance_usd, total_invested, total_earned, total_withdrawn. Auto-created on signup.
+## 5. Announcements
+- `announcements` table (title, body, severity, is_active, starts_at, ends_at, created_by).
+- Admin **Announcements** tab: create / edit / toggle active.
+- User dashboard shows the latest active announcement as a dismissible banner; realtime updates via Supabase channel.
 
-Triggers:
-- On signup: create wallet row.
-- On deposit approved: add amount to wallet.balance_usd.
-- On user_investment insert: deduct from wallet.balance_usd, add to total_invested.
-- On withdrawal approved: deduct from wallet.balance_usd, add to total_withdrawn.
-- Admin RPC `credit_investment_roi(investment_id, amount)` to credit ROI to wallet.
+## 6. Live chat / support
+- The project already has `support_tickets` and `support_messages` tables + `SupportChatWidget` and `SupportChatManagement`. Wire them in:
+  - Mount `SupportChatWidget` on Dashboard (floating bubble above BottomNav).
+  - Add **Support** tab in admin pointing at `SupportChatManagement`.
 
-RLS: users see only their own rows; admins see/manage all. Plans publicly readable.
+## 7. ROI ↔ investment coupling (verification)
+ROI already flows through `distribute_due_roi()` pro-rata against `expected_return = principal × (1 + plan.roi_percent/100)` over `duration_days`. Add a cron-style "Auto-distribute" toggle in admin (manual button stays). Confirm InvestPanel displays the exact ROI % and dollar profit from the selected plan and that completed investments stop accruing.
 
-Seed 4 default plans (Starter / Bronze / Silver / Gold).
+## 8. UX polish
+- Bottom nav: add a 6th item or fold Profile under header avatar (keep 5 nav items: Home / Invest / Deposit / Send / History; Profile via avatar tap).
+- All new screens use the lime aesthetic + EmptyState + mobile-first 320px layout.
 
-## 2. Frontend
+---
 
-### Landing page (`/`)
-Hero with tagline, "How it works" 3-step, plans preview cards (live from DB), live BTC/ETH/USDT prices via CoinGecko public API, CTA → signup/login.
+## Database migrations (single migration)
+- New tables: `deposit_addresses`, `user_kyc`, `manual_adjustments`, `announcements`.
+- New columns: `profiles.avatar_url`, `profiles.phone`, `profiles.country`, `profiles.is_banned`.
+- New SECURITY DEFINER functions: `admin_adjust_balance`, `admin_create_investment`, `admin_cancel_investment`, `admin_credit_deposit`.
+- New storage buckets: `avatars` (public), `kyc-documents` (private).
+- RLS: users read own (kyc/adjustments); admins manage all; deposit_addresses + active announcements readable by everyone.
 
-### Auth (`/auth`)
-Single page: email/password sign in + sign up tabs, Google button, forgot password.
+## New / edited files (high level)
+- New pages: `src/pages/KycPage.tsx`, `src/pages/ProfilePage.tsx`.
+- New admin components: `UsersManager.tsx`, `KycApproval.tsx`, `AnnouncementsManager.tsx`, `DepositAddressesManager.tsx`, plus per-user `UserDetailDrawer.tsx`.
+- Edited: `DepositPanel.tsx` (currency selector + dynamic address), `WithdrawPanel.tsx` (KYC gate), `AppShell.tsx` (avatar + announcement banner), `AdminDashboard.tsx` (new tabs), `App.tsx` (new routes), `BottomNav.tsx` (unchanged; Profile via header).
 
-### User dashboard (`/dashboard`)
-- Wallet summary: balance, total invested, total earned, total withdrawn.
-- Active investments list with progress bars.
-- Tabs: **Invest** (browse plans, pick amount, confirm), **Deposit** (show USDT address, copy, form for tx hash + screenshot upload), **Withdraw** (amount + wallet address form), **History** (deposits/withdrawals/investments).
-- Live price ticker.
+## Out of scope for this pass
+- Email notifications on KYC/deposit decisions (Resend secret exists; can wire in a follow-up).
+- Real-time push beyond what already exists.
+- Cron-scheduled auto ROI (keep manual button for now; can add a pg_cron job later).
 
-### Admin dashboard (`/admin`)
-Login gate as today. Tabs:
-- **Overview**: totals (users, deposits pending, withdrawals pending, AUM).
-- **Plans**: CRUD investment plans.
-- **Deposits**: pending list with screenshot viewer → approve/reject.
-- **Withdrawals**: pending list → approve/reject/mark paid.
-- **Investments**: list active investments → credit ROI button.
-- **Users**: list users with wallet balance.
-
-## 3. Files
-
-Delete/ignore (no longer routed):
-- signup flow components, referral leaderboard, bank details form, payment activation, intro sequence, session timeout, support chat, push notifications. (Leave files; just stop importing them.)
-
-New/replaced:
-- `src/pages/Landing.tsx`, `src/pages/Auth.tsx`, `src/pages/Dashboard.tsx`, `src/pages/AdminDashboard.tsx` (replace).
-- `src/components/invest/{PlanCard, InvestModal, DepositPanel, WithdrawPanel, WalletSummary, PriceTicker, HistoryTable}.tsx`.
-- `src/components/admin/{PlansManager, DepositsApproval, WithdrawalsApproval, InvestmentsManager, AdminOverview}.tsx`.
-- `src/hooks/useCryptoPrices.ts` (CoinGecko fetch + cache).
-- `src/hooks/useWallet.ts`.
-- Update `src/App.tsx` routes.
-
-## 4. Out of scope (ask if needed later)
-- Automatic on-chain verification (deposits stay manual screenshot + admin approval).
-- Email notifications.
-- Referral system removed.
-
-Proceeding will run a DB migration first, then write code.
+Once you approve, I'll ship it as one migration + the file changes above.
