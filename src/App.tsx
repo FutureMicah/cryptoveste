@@ -10,6 +10,8 @@ import InvestPage from "./pages/InvestPage";
 import DepositPage from "./pages/DepositPage";
 import WithdrawPage from "./pages/WithdrawPage";
 import HistoryPage from "./pages/HistoryPage";
+import KycPage from "./pages/KycPage";
+import ProfilePage from "./pages/ProfilePage";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -30,9 +32,10 @@ const App = () => (
           <Route path="/deposit" element={<DepositPage />} />
           <Route path="/withdraw" element={<WithdrawPage />} />
           <Route path="/history" element={<HistoryPage />} />
+          <Route path="/kyc" element={<KycPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

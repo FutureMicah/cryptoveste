@@ -92,6 +92,45 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          severity: string
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          severity?: string
+          starts_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          severity?: string
+          starts_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crypto_payments: {
         Row: {
           confirmations: number | null
@@ -144,6 +183,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      deposit_addresses: {
+        Row: {
+          address: string
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          min_amount: number
+          network: string
+          notes: string | null
+          qr_url: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          currency: string
+          id?: string
+          is_active?: boolean
+          min_amount?: number
+          network: string
+          notes?: string | null
+          qr_url?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          min_amount?: number
+          network?: string
+          notes?: string | null
+          qr_url?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       deposits: {
         Row: {
@@ -318,6 +399,36 @@ export type Database = {
           },
         ]
       }
+      manual_adjustments: {
+        Row: {
+          admin_id: string
+          amount_usd: number
+          created_at: string
+          id: string
+          kind: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          amount_usd: number
+          created_at?: string
+          id?: string
+          kind?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          amount_usd?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       payment_proofs: {
         Row: {
           amount: number | null
@@ -486,9 +597,11 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           bank_account_name: string | null
           bank_account_number: string | null
           bank_name: string | null
+          country: string | null
           country_code: string | null
           created_at: string | null
           detected_country: string | null
@@ -496,8 +609,10 @@ export type Database = {
           geo_zone: string | null
           id: string
           ip_address: string | null
+          is_banned: boolean
           is_vip: boolean | null
           last_name: string | null
+          phone: string | null
           referral_code: string
           telegram_id: number | null
           total_earnings: number | null
@@ -506,9 +621,11 @@ export type Database = {
           vpn_detected: boolean | null
         }
         Insert: {
+          avatar_url?: string | null
           bank_account_name?: string | null
           bank_account_number?: string | null
           bank_name?: string | null
+          country?: string | null
           country_code?: string | null
           created_at?: string | null
           detected_country?: string | null
@@ -516,8 +633,10 @@ export type Database = {
           geo_zone?: string | null
           id: string
           ip_address?: string | null
+          is_banned?: boolean
           is_vip?: boolean | null
           last_name?: string | null
+          phone?: string | null
           referral_code: string
           telegram_id?: number | null
           total_earnings?: number | null
@@ -526,9 +645,11 @@ export type Database = {
           vpn_detected?: boolean | null
         }
         Update: {
+          avatar_url?: string | null
           bank_account_name?: string | null
           bank_account_number?: string | null
           bank_name?: string | null
+          country?: string | null
           country_code?: string | null
           created_at?: string | null
           detected_country?: string | null
@@ -536,8 +657,10 @@ export type Database = {
           geo_zone?: string | null
           id?: string
           ip_address?: string | null
+          is_banned?: boolean
           is_vip?: boolean | null
           last_name?: string | null
+          phone?: string | null
           referral_code?: string
           telegram_id?: number | null
           total_earnings?: number | null
@@ -718,6 +841,63 @@ export type Database = {
           },
         ]
       }
+      user_kyc: {
+        Row: {
+          country: string | null
+          created_at: string
+          dob: string | null
+          full_name: string
+          id: string
+          id_back_url: string | null
+          id_front_url: string | null
+          id_number: string
+          id_type: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          dob?: string | null
+          full_name: string
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
+          id_number: string
+          id_type: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          dob?: string | null
+          full_name?: string
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
+          id_number?: string
+          id_type?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -849,6 +1029,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_adjust_balance: {
+        Args: {
+          _amount: number
+          _kind?: string
+          _reason: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      admin_cancel_investment: {
+        Args: { _investment_id: string }
+        Returns: undefined
+      }
+      admin_create_investment: {
+        Args: { _amount: number; _plan_id: string; _user_id: string }
+        Returns: string
+      }
+      admin_credit_deposit: {
+        Args: { _amount: number; _note: string; _user_id: string }
+        Returns: undefined
+      }
       credit_investment_roi: {
         Args: { _amount: number; _investment_id: string }
         Returns: undefined

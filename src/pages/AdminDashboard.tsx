@@ -12,6 +12,11 @@ import DepositsApproval from "@/components/admin/DepositsApproval";
 import WithdrawalsApproval from "@/components/admin/WithdrawalsApproval";
 import InvestmentsManager from "@/components/admin/InvestmentsManager";
 import AnalyticsPanel from "@/components/admin/AnalyticsPanel";
+import UsersManager from "@/components/admin/UsersManager";
+import KycApproval from "@/components/admin/KycApproval";
+import AnnouncementsManager from "@/components/admin/AnnouncementsManager";
+import DepositAddressesManager from "@/components/admin/DepositAddressesManager";
+import { SupportChatManagement } from "@/components/admin/SupportChatManagement";
 
 const ADMIN_EMAIL = "futuremicah4@gmail.com";
 
@@ -21,15 +26,12 @@ const AdminDashboard = () => {
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    document.title = "Admin — CryptoVest";
-  }, []);
+  useEffect(() => { document.title = "Admin — CryptoVest"; }, []);
 
   useEffect(() => {
     if (loading) return;
     if (!user) { setChecking(false); return; }
     (async () => {
-      // Auto-grant super_admin to the configured admin email
       if (user.email === ADMIN_EMAIL) {
         await supabase.from("user_roles").upsert({ user_id: user.id, role: "super_admin" }, { onConflict: "user_id,role" });
       }
@@ -89,17 +91,27 @@ const AdminDashboard = () => {
         <AdminOverview />
 
         <Tabs defaultValue="deposits">
-          <TabsList className="flex-wrap h-auto">
+          <TabsList className="flex-wrap h-auto justify-start gap-1">
             <TabsTrigger value="deposits">Deposits</TabsTrigger>
             <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="kyc">KYC</TabsTrigger>
             <TabsTrigger value="investments">Investments</TabsTrigger>
             <TabsTrigger value="plans">Plans</TabsTrigger>
+            <TabsTrigger value="wallets">Wallets</TabsTrigger>
+            <TabsTrigger value="announcements">Announcements</TabsTrigger>
+            <TabsTrigger value="support">Support</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
           <TabsContent value="deposits" className="mt-6"><DepositsApproval /></TabsContent>
           <TabsContent value="withdrawals" className="mt-6"><WithdrawalsApproval /></TabsContent>
+          <TabsContent value="users" className="mt-6"><UsersManager /></TabsContent>
+          <TabsContent value="kyc" className="mt-6"><KycApproval /></TabsContent>
           <TabsContent value="investments" className="mt-6"><InvestmentsManager /></TabsContent>
           <TabsContent value="plans" className="mt-6"><PlansManager /></TabsContent>
+          <TabsContent value="wallets" className="mt-6"><DepositAddressesManager /></TabsContent>
+          <TabsContent value="announcements" className="mt-6"><AnnouncementsManager /></TabsContent>
+          <TabsContent value="support" className="mt-6"><SupportChatManagement /></TabsContent>
           <TabsContent value="analytics" className="mt-6"><AnalyticsPanel /></TabsContent>
         </Tabs>
       </main>

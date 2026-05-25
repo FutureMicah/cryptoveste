@@ -7,14 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  ArrowUpRight, ArrowDownLeft, TrendingUp, Plus, Bell, LogOut, Shield, Eye, EyeOff,
+  ArrowUpRight, ArrowDownLeft, TrendingUp, Plus, Bell, Shield, Eye, EyeOff,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
+import { SupportChatWidget } from "@/components/SupportChatWidget";
 import { useCryptoPrices } from "@/hooks/useCryptoPrices";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const { wallet } = useWallet(user?.id);
   const [activeInv, setActiveInv] = useState<any[]>([]);
   const [recentTx, setRecentTx] = useState<any[]>([]);
@@ -31,12 +33,13 @@ const Dashboard = () => {
     if (!user) return;
     const load = async () => {
       const [p, inv, dep, wd] = await Promise.all([
-        supabase.from("profiles").select("first_name").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("first_name,avatar_url,is_banned").eq("id", user.id).maybeSingle(),
         supabase.from("user_investments").select("*, investment_plans(name, roi_percent, duration_days)")
           .eq("user_id", user.id).eq("status", "active").order("created_at", { ascending: false }).limit(3),
         supabase.from("deposits").select("id, amount_usd, status, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(4),
         supabase.from("withdrawals").select("id, amount_usd, status, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(4),
       ]);
+      if (p.data?.is_banned) { await supabase.auth.signOut(); navigate("/"); return; }
       setProfile(p.data);
       setActiveInv((inv.data as any[]) ?? []);
       const merged = [
@@ -53,7 +56,7 @@ const Dashboard = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${user.id}` }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user]);
+  }, [user, navigate]);
 
   if (loading || !user) return null;
   const balance = wallet?.balance_usd ?? 0;
@@ -66,15 +69,16 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen gradient-dark-card text-foreground pb-24 overflow-x-hidden">
-      {/* Header */}
       <header className="px-3 pt-4 pb-2 flex items-center justify-between gap-2 max-w-md mx-auto">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-9 h-9 rounded-full gradient-lime grid place-items-center font-bold text-primary-foreground text-sm shrink-0">{initial}</div>
+        <Link to="/profile" className="flex items-center gap-2 min-w-0">
+          <div className="w-9 h-9 rounded-full gradient-lime grid place-items-center font-bold text-primary-foreground text-sm shrink-0 overflow-hidden">
+            {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" /> : initial}
+          </div>
           <div className="min-w-0">
             <p className="text-[10px] text-muted-foreground leading-tight">Welcome back</p>
             <p className="font-semibold text-xs truncate">{firstName}</p>
           </div>
-        </div>
+        </Link>
         <div className="flex gap-1.5 shrink-0">
           <button onClick={() => navigate("/admin")} className="w-9 h-9 rounded-full bg-card border border-border grid place-items-center" aria-label="Admin">
             <Shield className="w-4 h-4" />
@@ -82,14 +86,12 @@ const Dashboard = () => {
           <button className="w-9 h-9 rounded-full bg-card border border-border grid place-items-center" aria-label="Notifications">
             <Bell className="w-4 h-4" />
           </button>
-          <button onClick={() => signOut().then(() => navigate("/"))} className="w-9 h-9 rounded-full bg-card border border-border grid place-items-center" aria-label="Sign out">
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
       </header>
 
       <main className="px-3 max-w-md mx-auto space-y-3">
-        {/* Balance Card */}
+        <AnnouncementBanner />
+
         <section className="surface-lime rounded-[24px] p-4 shadow-2xl">
           <div className="flex items-center justify-between">
             <p className="text-[10px] font-semibold opacity-70 uppercase tracking-wide">Total balance</p>
@@ -118,7 +120,6 @@ const Dashboard = () => {
           </div>
         </section>
 
-        {/* Live prices */}
         <section>
           <div className="flex items-center justify-between mb-1.5">
             <h3 className="font-semibold text-xs">Live prices</h3>
@@ -139,7 +140,6 @@ const Dashboard = () => {
           </div>
         </section>
 
-        {/* Active Investments */}
         <section>
           <div className="flex items-center justify-between mb-1.5">
             <h3 className="font-semibold text-xs">Active investments</h3>
@@ -179,7 +179,6 @@ const Dashboard = () => {
           )}
         </section>
 
-        {/* Transactions */}
         <section>
           <div className="flex items-center justify-between mb-1.5">
             <h3 className="font-semibold text-xs">Recent transactions</h3>
@@ -214,6 +213,7 @@ const Dashboard = () => {
       </main>
 
       <BottomNav />
+      <SupportChatWidget />
     </div>
   );
 };
