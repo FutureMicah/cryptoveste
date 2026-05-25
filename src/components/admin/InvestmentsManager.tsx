@@ -89,6 +89,12 @@ const InvestmentsManager = () => {
                 <Button size="sm" onClick={() => credit(inv.id)} variant="outline">
                   <DollarSign className="w-4 h-4 mr-1" />Credit
                 </Button>
+                <Button size="sm" variant="destructive" onClick={async () => {
+                  if (!confirm("Cancel and refund remaining principal?")) return;
+                  const { error } = await supabase.rpc("admin_cancel_investment", { _investment_id: inv.id });
+                  if (error) return toast.error(error.message);
+                  toast.success("Cancelled"); load();
+                }}>Cancel</Button>
               </div>
             )}
           </Card>

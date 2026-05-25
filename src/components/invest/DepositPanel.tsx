@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,22 +6,49 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Copy, Upload, Loader2, ShieldCheck } from "lucide-react";
 
-const USDT_ADDRESS = "0x37e39CcC88bfcD0a78087DD1188619530C355a95";
+interface Addr {
+  id: string;
+  currency: string;
+  network: string;
+  address: string;
+  min_amount: number;
+  notes: string | null;
+}
 
 const DepositPanel = ({ userId, onDone }: { userId: string; onDone?: () => void }) => {
+  const [addresses, setAddresses] = useState<Addr[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
   const [senderWallet, setSenderWallet] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("deposit_addresses")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      const list = (data as Addr[]) ?? [];
+      setAddresses(list);
+      if (list[0]) setSelected(list[0].id);
+    })();
+  }, []);
+
+  const active = addresses.find((a) => a.id === selected);
+
   const copy = () => {
-    navigator.clipboard.writeText(USDT_ADDRESS);
+    if (!active) return;
+    navigator.clipboard.writeText(active.address);
     toast.success("Address copied");
   };
 
   const submit = async () => {
+    if (!active) return toast.error("Select a currency");
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return toast.error("Enter a valid amount");
+    if (amt < Number(active.min_amount)) return toast.error(`Minimum is $${active.min_amount}`);
     if (!file) return toast.error("Upload payment screenshot");
 
     setLoading(true);
@@ -36,6 +63,7 @@ const DepositPanel = ({ userId, onDone }: { userId: string; onDone?: () => void 
         amount_usd: amt,
         sender_wallet: senderWallet || null,
         screenshot_url: path,
+        admin_notes: `${active.currency} ${active.network}`,
         status: "pending",
       });
       if (error) throw error;
@@ -53,14 +81,33 @@ const DepositPanel = ({ userId, onDone }: { userId: string; onDone?: () => void 
   return (
     <div className="space-y-4">
       <div className="surface-lime rounded-[28px] p-5">
-        <p className="text-xs font-semibold opacity-70 uppercase tracking-wide">USDT BEP20 wallet</p>
-        <div className="mt-2 flex items-center gap-2 bg-black/15 rounded-2xl p-3">
-          <code className="flex-1 text-[11px] font-mono break-all">{USDT_ADDRESS}</code>
-          <button onClick={copy} className="w-9 h-9 rounded-full bg-black/80 text-white grid place-items-center shrink-0">
-            <Copy className="w-4 h-4" />
-          </button>
+        <p className="text-xs font-semibold opacity-70 uppercase tracking-wide">Select asset</p>
+        <div className="flex gap-1.5 mt-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
+          {addresses.map((a) => (
+            <button
+              key={a.id}
+              onClick={() => setSelected(a.id)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold transition ${
+                a.id === selected ? "bg-black text-primary" : "bg-black/15 text-foreground/80"
+              }`}
+            >
+              {a.currency} · {a.network}
+            </button>
+          ))}
         </div>
-        <p className="text-[11px] mt-3 opacity-80">⚠️ Send USDT on BEP20 (Binance Smart Chain) only. Other networks will be lost.</p>
+        {active && (
+          <>
+            <div className="mt-3 flex items-center gap-2 bg-black/15 rounded-2xl p-3">
+              <code className="flex-1 text-[11px] font-mono break-all">{active.address}</code>
+              <button onClick={copy} className="w-9 h-9 rounded-full bg-black/80 text-white grid place-items-center shrink-0">
+                <Copy className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-[11px] mt-3 opacity-80">
+              ⚠️ Send {active.currency} on {active.network} only. Min ${Number(active.min_amount).toFixed(2)}. Other networks will be lost.
+            </p>
+          </>
+        )}
       </div>
 
       <div className="rounded-3xl bg-card border border-border p-5 space-y-4">
@@ -70,7 +117,7 @@ const DepositPanel = ({ userId, onDone }: { userId: string; onDone?: () => void 
         </div>
         <div className="space-y-2">
           <Label className="text-xs">Sender wallet (optional)</Label>
-          <Input value={senderWallet} onChange={(e) => setSenderWallet(e.target.value)} placeholder="0x..." className="rounded-xl h-12" />
+          <Input value={senderWallet} onChange={(e) => setSenderWallet(e.target.value)} placeholder="Your wallet address" className="rounded-xl h-12 font-mono text-xs" />
         </div>
         <div className="space-y-2">
           <Label className="text-xs">Payment proof screenshot</Label>
