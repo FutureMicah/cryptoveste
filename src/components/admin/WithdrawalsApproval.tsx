@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Check, X, Send } from "lucide-react";
+import { logAdminAction } from "@/lib/auditLog";
 
 const WithdrawalsApproval = () => {
   const [items, setItems] = useState<any[]>([]);
@@ -18,12 +19,13 @@ const WithdrawalsApproval = () => {
   };
   useEffect(() => { load(); }, [filter]);
 
-  const decide = async (id: string, status: "approved" | "rejected" | "paid") => {
+  const decide = async (w: any, status: "approved" | "rejected" | "paid") => {
     const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase.from("withdrawals").update({
       status, reviewed_by: user?.id, reviewed_at: new Date().toISOString(),
-    }).eq("id", id);
+    }).eq("id", w.id);
     if (error) return toast.error(error.message);
+    await logAdminAction(`withdrawal_${status}`, { targetType: "withdrawal", targetId: w.id, targetUserId: w.user_id, details: { amount: w.amount_usd, wallet_address: w.wallet_address } });
     toast.success(`Withdrawal ${status}`);
     load();
   };
@@ -52,12 +54,12 @@ const WithdrawalsApproval = () => {
             <div className="flex gap-2 flex-wrap">
               {w.status === "pending" && (
                 <>
-                  <Button size="sm" onClick={() => decide(w.id, "approved")}><Check className="w-4 h-4 mr-1" />Approve</Button>
-                  <Button size="sm" variant="destructive" onClick={() => decide(w.id, "rejected")}><X className="w-4 h-4" /></Button>
+                  <Button size="sm" onClick={() => decide(w, "approved")}><Check className="w-4 h-4 mr-1" />Approve</Button>
+                  <Button size="sm" variant="destructive" onClick={() => decide(w, "rejected")}><X className="w-4 h-4" /></Button>
                 </>
               )}
               {w.status === "approved" && (
-                <Button size="sm" onClick={() => decide(w.id, "paid")}><Send className="w-4 h-4 mr-1" />Mark Paid</Button>
+                <Button size="sm" onClick={() => decide(w, "paid")}><Send className="w-4 h-4 mr-1" />Mark Paid</Button>
               )}
             </div>
           </div>

@@ -16,6 +16,7 @@ import UsersManager from "@/components/admin/UsersManager";
 import KycApproval from "@/components/admin/KycApproval";
 import AnnouncementsManager from "@/components/admin/AnnouncementsManager";
 import DepositAddressesManager from "@/components/admin/DepositAddressesManager";
+import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import { SupportChatManagement } from "@/components/admin/SupportChatManagement";
 
 const ADMIN_EMAIL = "futuremicah4@gmail.com";
@@ -102,6 +103,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
             <TabsTrigger value="support">Support</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="audit">Audit log</TabsTrigger>
           </TabsList>
           <TabsContent value="deposits" className="mt-6"><DepositsApproval /></TabsContent>
           <TabsContent value="withdrawals" className="mt-6"><WithdrawalsApproval /></TabsContent>
@@ -113,6 +115,7 @@ const AdminDashboard = () => {
           <TabsContent value="announcements" className="mt-6"><AnnouncementsManager /></TabsContent>
           <TabsContent value="support" className="mt-6"><SupportChatManagement /></TabsContent>
           <TabsContent value="analytics" className="mt-6"><AnalyticsPanel /></TabsContent>
+          <TabsContent value="audit" className="mt-6"><AuditLogViewer /></TabsContent>
         </Tabs>
       </main>
     </div>

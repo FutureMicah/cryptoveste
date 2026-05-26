@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { toast } from "sonner";
 import { Search, Ban, ShieldOff, ShieldCheck, DollarSign, Plus, X, Inbox, User as UserIcon } from "lucide-react";
 import EmptyState, { ListSkeleton } from "@/components/EmptyState";
+import { logAdminAction } from "@/lib/auditLog";
 
 const UsersManager = () => {
   const [users, setUsers] = useState<any[] | null>(null);
@@ -27,6 +28,7 @@ const UsersManager = () => {
   const setBan = async (id: string, banned: boolean) => {
     const { error } = await supabase.from("profiles").update({ is_banned: banned }).eq("id", id);
     if (error) return toast.error(error.message);
+    await logAdminAction(banned ? "user_banned" : "user_unbanned", { targetType: "profile", targetUserId: id });
     toast.success(banned ? "User banned" : "User unbanned");
     load();
   };

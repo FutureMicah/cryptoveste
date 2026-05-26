@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import KycStatusBanner from "@/components/KycStatusBanner";
 import { SupportChatWidget } from "@/components/SupportChatWidget";
 import { useCryptoPrices } from "@/hooks/useCryptoPrices";
 
@@ -91,6 +92,8 @@ const Dashboard = () => {
 
       <main className="px-3 max-w-md mx-auto space-y-3">
         <AnnouncementBanner />
+        <KycStatusBanner userId={user.id} />
+
 
         <section className="surface-lime rounded-[24px] p-4 shadow-2xl">
           <div className="flex items-center justify-between">

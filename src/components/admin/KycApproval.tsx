@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Check, X, ShieldCheck, Eye, Inbox } from "lucide-react";
 import EmptyState, { ListSkeleton } from "@/components/EmptyState";
+import { logAdminAction } from "@/lib/auditLog";
 
 const KycApproval = () => {
   const [items, setItems] = useState<any[] | null>(null);
@@ -32,6 +33,7 @@ const KycApproval = () => {
     if (status === "rejected") update.rejection_reason = reasons[k.id] || "Not specified";
     const { error } = await supabase.from("user_kyc").update(update).eq("id", k.id);
     if (error) return toast.error(error.message);
+    await logAdminAction(`kyc_${status}`, { targetType: "user_kyc", targetId: k.id, targetUserId: k.user_id, details: { full_name: k.full_name, reason: update.rejection_reason } });
     toast.success(`KYC ${status}`);
     load();
   };

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Eye, Check, X, Inbox } from "lucide-react";
 import ProofViewer from "./ProofViewer";
 import EmptyState, { ListSkeleton } from "@/components/EmptyState";
+import { logAdminAction } from "@/lib/auditLog";
 
 interface Deposit {
   id: string;
@@ -31,12 +32,13 @@ const DepositsApproval = () => {
   };
   useEffect(() => { load(); }, [filter]);
 
-  const decide = async (id: string, status: "approved" | "rejected") => {
+  const decide = async (d: Deposit, status: "approved" | "rejected") => {
     const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase.from("deposits").update({
       status, reviewed_by: user?.id, reviewed_at: new Date().toISOString(),
-    }).eq("id", id);
+    }).eq("id", d.id);
     if (error) return toast.error(error.message);
+    await logAdminAction(`deposit_${status}`, { targetType: "deposit", targetId: d.id, targetUserId: d.user_id, details: { amount: d.amount_usd } });
     toast.success(`Deposit ${status}`);
     load();
   };
@@ -76,10 +78,10 @@ const DepositsApproval = () => {
                   )}
                   {d.status === "pending" && (
                     <>
-                      <Button size="sm" onClick={() => decide(d.id, "approved")} className="gradient-lime border-0 text-primary-foreground">
+                      <Button size="sm" onClick={() => decide(d, "approved")} className="gradient-lime border-0 text-primary-foreground">
                         <Check className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="destructive" onClick={() => decide(d.id, "rejected")}>
+                      <Button size="sm" variant="destructive" onClick={() => decide(d, "rejected")}>
                         <X className="w-4 h-4" />
                       </Button>
                     </>
