@@ -32,23 +32,23 @@ const Landing = () => {
   const goStart = () => navigate(isAuthenticated ? "/dashboard" : "/auth");
 
   return (
-    <div className="min-h-screen gradient-dark-card text-foreground">
+    <div className="min-h-screen gradient-dark-card text-foreground overflow-x-hidden">
       {/* Nav */}
       <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-5 h-16">
-          <Link to="/" className="flex items-center gap-2 font-bold">
-            <span className="w-9 h-9 rounded-2xl gradient-lime grid place-items-center">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-3 sm:px-5 h-14 sm:h-16 gap-2">
+          <Link to="/" className="flex items-center gap-1.5 font-bold text-sm sm:text-base min-w-0">
+            <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl gradient-lime grid place-items-center shrink-0">
               <Zap className="w-4 h-4 text-primary-foreground" />
             </span>
-            CryptoVest
+            <span className="truncate">CryptoVest</span>
           </Link>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="rounded-full">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="rounded-full px-2 sm:px-3">
               <ShieldCheck className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Admin</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/auth")} className="rounded-full">Sign in</Button>
-            <Button size="sm" onClick={goStart} className="rounded-full gradient-lime text-primary-foreground hover:opacity-90 border-0">
-              Get Started
+            <Button variant="ghost" size="sm" onClick={() => navigate("/auth")} className="rounded-full px-2 sm:px-3 text-xs sm:text-sm">Sign in</Button>
+            <Button size="sm" onClick={goStart} className="rounded-full gradient-lime text-primary-foreground hover:opacity-90 border-0 px-3 text-xs sm:text-sm">
+              Start
             </Button>
           </div>
         </div>
@@ -56,7 +56,27 @@ const Landing = () => {
 
       {/* Hero */}
       <section className="relative overflow-hidden gradient-hero">
-        <div className="max-w-6xl mx-auto px-5 py-16 sm:py-24 grid lg:grid-cols-2 gap-10 items-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 py-10 sm:py-24 grid lg:grid-cols-2 gap-8 items-center">
+          <div>
+            <span className="inline-block px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-primary/15 text-primary border border-primary/30 mb-4">
+              ⚡ Crypto investing, simplified
+            </span>
+            <h1 className="text-3xl sm:text-6xl font-bold tracking-tight mb-4 leading-tight">
+              Grow your <span className="text-lime-gradient">crypto wealth</span> in a few taps
+            </h1>
+            <p className="text-sm sm:text-lg text-muted-foreground mb-6 max-w-md">
+              Deposit USDT, pick a plan, watch your balance grow. No charts, no jargon — just simple, transparent investing.
+            </p>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <Button size="lg" onClick={goStart} className="rounded-full h-11 sm:h-12 px-5 sm:px-7 text-sm gradient-lime text-primary-foreground hover:opacity-90 border-0">
+                Start Investing <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => navigate("/auth")} className="rounded-full h-11 sm:h-12 px-5 sm:px-7 text-sm">
+                Sign in
+              </Button>
+            </div>
+          </div>
+
           <div>
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary/15 text-primary border border-primary/30 mb-5">
               ⚡ Crypto investing, simplified
@@ -129,23 +149,23 @@ const Landing = () => {
       </section>
 
       {/* Plans */}
-      <section className="max-w-6xl mx-auto px-5 py-20">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-3">Investment Plans</h2>
-          <p className="text-muted-foreground">Pick a plan that fits your goals.</p>
+      <section className="max-w-6xl mx-auto px-4 sm:px-5 py-12 sm:py-20">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl sm:text-4xl font-bold mb-2">Investment Plans</h2>
+          <p className="text-sm text-muted-foreground">Pick a plan that fits your goals.</p>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {plans.map((p, i) => (
-            <Card key={p.id} className={`rounded-3xl p-6 border-border ${i === 1 ? "surface-lime border-0" : "bg-card"}`}>
-              <h3 className="font-bold text-lg">{p.name}</h3>
-              <p className={`text-xs mb-4 min-h-[2.5rem] ${i === 1 ? "opacity-70" : "text-muted-foreground"}`}>{p.description}</p>
-              <div className="text-4xl font-bold mb-1">{p.roi_percent}%</div>
-              <div className={`text-xs mb-4 ${i === 1 ? "opacity-70" : "text-muted-foreground"}`}>ROI in {p.duration_days} days</div>
-              <div className={`text-sm pt-4 border-t space-y-1 ${i === 1 ? "border-black/20" : "border-border"}`}>
+            <Card key={p.id} className={`rounded-3xl p-5 sm:p-6 border-border ${i === 1 ? "surface-lime border-0" : "bg-card"}`}>
+              <h3 className="font-bold text-base sm:text-lg">{p.name}</h3>
+              <p className={`text-xs mb-3 min-h-[2.5rem] ${i === 1 ? "opacity-70" : "text-muted-foreground"}`}>{p.description}</p>
+              <div className="text-3xl sm:text-4xl font-bold mb-1">{p.roi_percent}%</div>
+              <div className={`text-xs mb-3 ${i === 1 ? "opacity-70" : "text-muted-foreground"}`}>ROI in {p.duration_days} days</div>
+              <div className={`text-xs sm:text-sm pt-3 border-t space-y-1 ${i === 1 ? "border-black/20" : "border-border"}`}>
                 <div className="flex justify-between"><span className={i === 1 ? "opacity-70" : "text-muted-foreground"}>Min</span><span className="font-semibold">${p.min_amount}</span></div>
                 <div className="flex justify-between"><span className={i === 1 ? "opacity-70" : "text-muted-foreground"}>Max</span><span className="font-semibold">${p.max_amount.toLocaleString()}</span></div>
               </div>
-              <Button onClick={goStart} className={`w-full mt-5 rounded-full ${i === 1 ? "bg-black text-white hover:bg-black/90" : "gradient-lime text-primary-foreground border-0"}`}>
+              <Button onClick={goStart} className={`w-full mt-4 rounded-full ${i === 1 ? "bg-black text-white hover:bg-black/90" : "gradient-lime text-primary-foreground border-0"}`}>
                 Invest
               </Button>
             </Card>
@@ -154,36 +174,36 @@ const Landing = () => {
       </section>
 
       {/* How it works */}
-      <section className="max-w-6xl mx-auto px-5 py-16">
-        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-10">Three simple steps</h2>
-        <div className="grid sm:grid-cols-3 gap-5">
+      <section className="max-w-6xl mx-auto px-4 sm:px-5 py-10 sm:py-16">
+        <h2 className="text-2xl sm:text-4xl font-bold text-center mb-8">Three simple steps</h2>
+        <div className="grid sm:grid-cols-3 gap-4">
           {[
             { n: "01", title: "Fund your wallet", desc: "Deposit USDT (BEP20) to your CryptoVest wallet in minutes." },
             { n: "02", title: "Choose a plan", desc: "Pick an investment plan that matches your goals and risk." },
             { n: "03", title: "Earn returns", desc: "Track returns daily and withdraw anytime to your wallet." },
           ].map((s, i) => (
-            <Card key={i} className="rounded-3xl p-6 bg-card border-border">
-              <div className="text-lime-gradient text-3xl font-bold mb-3">{s.n}</div>
-              <h3 className="font-semibold text-lg mb-2">{s.title}</h3>
-              <p className="text-sm text-muted-foreground">{s.desc}</p>
+            <Card key={i} className="rounded-3xl p-5 sm:p-6 bg-card border-border">
+              <div className="text-lime-gradient text-2xl sm:text-3xl font-bold mb-2">{s.n}</div>
+              <h3 className="font-semibold text-base sm:text-lg mb-1">{s.title}</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">{s.desc}</p>
             </Card>
           ))}
         </div>
       </section>
 
       {/* CTA */}
-      <section className="max-w-4xl mx-auto px-5 py-20">
-        <Card className="surface-lime rounded-[32px] p-10 sm:p-14 text-center border-0">
-          <ShieldCheck className="w-10 h-10 mx-auto mb-4" />
-          <h2 className="text-3xl sm:text-4xl font-bold mb-3">Ready to start earning?</h2>
-          <p className="opacity-80 mb-7 max-w-md mx-auto">Create your free account and make your first deposit in minutes.</p>
-          <Button size="lg" onClick={goStart} className="rounded-full h-12 px-10 bg-black text-white hover:bg-black/90">
+      <section className="max-w-4xl mx-auto px-4 sm:px-5 py-12 sm:py-20">
+        <Card className="surface-lime rounded-[28px] sm:rounded-[32px] p-6 sm:p-14 text-center border-0">
+          <ShieldCheck className="w-9 h-9 sm:w-10 sm:h-10 mx-auto mb-3" />
+          <h2 className="text-2xl sm:text-4xl font-bold mb-2">Ready to start earning?</h2>
+          <p className="text-sm opacity-80 mb-6 max-w-md mx-auto">Create your free account and make your first deposit in minutes.</p>
+          <Button size="lg" onClick={goStart} className="rounded-full h-11 sm:h-12 px-7 sm:px-10 bg-black text-white hover:bg-black/90 text-sm">
             Open my account <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </Card>
       </section>
 
-      <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
+      <footer className="border-t border-border py-6 text-center text-xs sm:text-sm text-muted-foreground px-4">
         © {new Date().getFullYear()} CryptoVest. All rights reserved.
       </footer>
     </div>
