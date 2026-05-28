@@ -14,6 +14,7 @@ import AnnouncementBanner from "@/components/AnnouncementBanner";
 import KycStatusBanner from "@/components/KycStatusBanner";
 import { SupportChatWidget } from "@/components/SupportChatWidget";
 import { useCryptoPrices } from "@/hooks/useCryptoPrices";
+import holoCard from "@/assets/holo-card.jpeg";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -95,31 +96,48 @@ const Dashboard = () => {
         <KycStatusBanner userId={user.id} />
 
 
-        <section className="surface-lime rounded-[24px] p-4 shadow-2xl">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold opacity-70 uppercase tracking-wide">Total balance</p>
-            <button onClick={() => setHide((h) => !h)} className="w-7 h-7 rounded-full bg-black/15 grid place-items-center">
-              {hide ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-          <h1 className="text-2xl font-bold mt-1 tracking-tight truncate">{masked(balance)}</h1>
-          <div className="flex flex-wrap gap-1.5 mt-1.5 text-[10px]">
-            <span className="bg-black/15 px-2 py-0.5 rounded-full">Earned {hide ? "•••" : `$${earned.toFixed(2)}`}</span>
-            <span className="bg-black/15 px-2 py-0.5 rounded-full">Invested {hide ? "•••" : `$${invested.toFixed(2)}`}</span>
-          </div>
+        <section className="surface-lime rounded-[24px] p-4 shadow-2xl relative overflow-hidden animate-scale-in">
+          {/* Floating holographic card visual */}
+          <img
+            src={holoCard}
+            alt=""
+            className="absolute -right-6 -top-4 w-28 h-28 object-contain opacity-70 animate-float pointer-events-none select-none mix-blend-luminosity"
+          />
+          {/* Shimmer sweep */}
+          <div className="absolute inset-0 pointer-events-none opacity-30 animate-shimmer"
+               style={{ background: "linear-gradient(110deg, transparent 35%, rgba(255,255,255,0.35) 50%, transparent 65%)", backgroundSize: "200% 100%" }} />
 
-          <div className="grid grid-cols-4 gap-1.5 mt-4">
-            {[
-              { to: "/invest", I: TrendingUp, l: "Invest" },
-              { to: "/deposit", I: ArrowDownLeft, l: "Deposit" },
-              { to: "/withdraw", I: ArrowUpRight, l: "Send" },
-              { to: "/history", I: Plus, l: "History" },
-            ].map((a) => (
-              <Link key={a.l} to={a.to} className="bg-black/15 hover:bg-black/25 transition rounded-xl py-2 flex flex-col items-center gap-0.5">
-                <a.I className="w-3.5 h-3.5" />
-                <span className="text-[9px] font-semibold">{a.l}</span>
-              </Link>
-            ))}
+          <div className="relative">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold opacity-70 uppercase tracking-wide">Total balance</p>
+              <button onClick={() => setHide((h) => !h)} className="w-7 h-7 rounded-full bg-black/15 grid place-items-center hover:bg-black/25 transition-colors">
+                {hide ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+            <h1 className="text-2xl font-bold mt-1 tracking-tight truncate">{masked(balance)}</h1>
+            <div className="flex flex-wrap gap-1.5 mt-1.5 text-[10px]">
+              <span className="bg-black/15 px-2 py-0.5 rounded-full">Earned {hide ? "•••" : `$${earned.toFixed(2)}`}</span>
+              <span className="bg-black/15 px-2 py-0.5 rounded-full">Invested {hide ? "•••" : `$${invested.toFixed(2)}`}</span>
+            </div>
+
+            <div className="grid grid-cols-4 gap-1.5 mt-4">
+              {[
+                { to: "/invest", I: TrendingUp, l: "Invest" },
+                { to: "/deposit", I: ArrowDownLeft, l: "Deposit" },
+                { to: "/withdraw", I: ArrowUpRight, l: "Send" },
+                { to: "/history", I: Plus, l: "History" },
+              ].map((a, i) => (
+                <Link
+                  key={a.l}
+                  to={a.to}
+                  className="bg-black/15 hover:bg-black/30 active:scale-95 transition-all rounded-xl py-2 flex flex-col items-center gap-0.5 animate-fade-in"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <a.I className="w-3.5 h-3.5" />
+                  <span className="text-[9px] font-semibold">{a.l}</span>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 

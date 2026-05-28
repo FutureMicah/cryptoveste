@@ -11,14 +11,16 @@ const AnnouncementBanner = () => {
   });
 
   const load = async () => {
+    const nowIso = new Date().toISOString();
     const { data } = await supabase
       .from("announcements")
-      .select("id,title,body,severity")
+      .select("id,title,body,severity,ends_at")
       .eq("is_active", true)
-      .lte("starts_at", new Date().toISOString())
+      .lte("starts_at", nowIso)
       .order("created_at", { ascending: false })
-      .limit(1);
-    setAnn((data?.[0] as Ann) ?? null);
+      .limit(5);
+    const live = (data ?? []).find((a: any) => !a.ends_at || a.ends_at > nowIso) as Ann | undefined;
+    setAnn(live ?? null);
   };
 
   useEffect(() => {
@@ -47,13 +49,13 @@ const AnnouncementBanner = () => {
   const Icon = { critical: AlertTriangle, warning: AlertTriangle, success: CheckCircle2, info: Megaphone }[ann.severity] ?? Info;
 
   return (
-    <div className={`rounded-2xl border p-3 flex items-start gap-2 ${tone}`}>
-      <Icon className="w-4 h-4 shrink-0 mt-0.5" />
+    <div className={`rounded-2xl border p-3 flex items-start gap-2 ${tone} animate-fade-in shadow-lg`}>
+      <Icon className="w-4 h-4 shrink-0 mt-0.5 animate-glow-pulse" />
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold">{ann.title}</p>
         <p className="text-[11px] opacity-90 break-words">{ann.body}</p>
       </div>
-      <button onClick={dismiss} className="opacity-70 hover:opacity-100 shrink-0"><X className="w-3.5 h-3.5" /></button>
+      <button onClick={dismiss} className="opacity-70 hover:opacity-100 shrink-0 transition-opacity"><X className="w-3.5 h-3.5" /></button>
     </div>
   );
 };
