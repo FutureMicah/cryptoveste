@@ -15,7 +15,6 @@ import KycStatusBanner from "@/components/KycStatusBanner";
 import { SupportChatWidget } from "@/components/SupportChatWidget";
 import { useCryptoPrices } from "@/hooks/useCryptoPrices";
 import holoCard from "@/assets/holo-card.jpeg";
-import limeLock from "@/assets/lime-lock.jpeg";
 
 const Dashboard = () => {
   const navigate = useNavigate();
