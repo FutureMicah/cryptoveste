@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Zap, Loader2, ArrowLeft, Mail, Lock, User } from "lucide-react";
+import { Zap, Loader2, ArrowLeft, Mail, Lock, User, Phone } from "lucide-react";
 
 type Mode = "signin" | "signup";
 
@@ -16,6 +16,8 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
 
   useEffect(() => {
     document.title = mode === "signin" ? "Sign in — CryptoVest" : "Create account — CryptoVest";
@@ -34,13 +36,20 @@ const Auth = () => {
       toast.success("Welcome back!");
       navigate("/dashboard");
     } else {
+      if (!/^\+?[0-9\s\-()]{7,20}$/.test(phone.trim())) {
+        setLoading(false);
+        return toast.error("Enter a valid phone number with country code (e.g. +234…)");
+      }
       const { error } = await supabase.auth.signUp({
         email, password,
-        options: { emailRedirectTo: `${window.location.origin}/dashboard`, data: { first_name: firstName } },
+        options: {
+          emailRedirectTo: `${window.location.origin}/kyc`,
+          data: { first_name: firstName, last_name: lastName, phone: phone.trim() },
+        },
       });
       setLoading(false);
       if (error) return toast.error(error.message);
-      toast.success("Account created! Check your email to verify.");
+      toast.success("Account created! Check your email, then complete KYC to unlock the platform.");
     }
   };
 
@@ -106,13 +115,28 @@ const Auth = () => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           {mode === "signup" && (
-            <div className="space-y-1.5">
-              <Label className="text-xs">First name</Label>
-              <div className="relative">
-                <User className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required className="h-12 rounded-2xl pl-11 bg-card border-border" />
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">First name</Label>
+                  <div className="relative">
+                    <User className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required className="h-12 rounded-2xl pl-11 bg-card border-border" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Last name</Label>
+                  <Input value={lastName} onChange={(e) => setLastName(e.target.value)} required className="h-12 rounded-2xl bg-card border-border" />
+                </div>
               </div>
-            </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Phone (with country code)</Label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input type="tel" inputMode="tel" placeholder="+234 800 000 0000" value={phone} onChange={(e) => setPhone(e.target.value)} required className="h-12 rounded-2xl pl-11 bg-card border-border" />
+                </div>
+              </div>
+            </>
           )}
           <div className="space-y-1.5">
             <Label className="text-xs">Email</Label>
