@@ -238,6 +238,31 @@ const UserRow = ({ user, onBan, onChanged }: { user: any; onBan: (id: string, b:
               }
             </Card>
 
+            <Card className="p-3 rounded-2xl space-y-2">
+              <p className="text-xs font-semibold flex items-center gap-1"><UserCog className="w-3.5 h-3.5 text-primary" />Edit profile</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Input placeholder="First name" value={profileForm.first_name} onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })} className="rounded-xl h-9 text-xs" />
+                <Input placeholder="Last name" value={profileForm.last_name} onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })} className="rounded-xl h-9 text-xs" />
+                <Input placeholder="Username" value={profileForm.username} onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })} className="rounded-xl h-9 text-xs" />
+                <Input placeholder="Phone" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} className="rounded-xl h-9 text-xs" />
+                <Input placeholder="Country" value={profileForm.country} onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })} className="rounded-xl h-9 text-xs" />
+                <Input placeholder="Avatar URL" value={profileForm.avatar_url} onChange={(e) => setProfileForm({ ...profileForm, avatar_url: e.target.value })} className="rounded-xl h-9 text-xs" />
+              </div>
+              <Button onClick={saveProfile} size="sm" className="w-full rounded-full" variant="outline">Save profile</Button>
+            </Card>
+
+            <Card className="p-3 rounded-2xl space-y-2">
+              <p className="text-xs font-semibold">Account actions</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button onClick={doResetPwd} size="sm" variant="outline" className="rounded-full"><KeyRound className="w-3.5 h-3.5 mr-1" />Reset password</Button>
+                <Button onClick={doForceSignout} size="sm" variant="outline" className="rounded-full"><LogOut className="w-3.5 h-3.5 mr-1" />Force sign-out</Button>
+              </div>
+              <div className="flex gap-2">
+                <Input type="email" placeholder="new email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className="rounded-xl h-9 text-xs flex-1" />
+                <Button onClick={doUpdateEmail} size="sm" variant="outline" className="rounded-full"><Mail className="w-3.5 h-3.5 mr-1" />Update</Button>
+              </div>
+            </Card>
+
             <Button variant={user.is_banned ? "outline" : "destructive"} className="w-full rounded-full" onClick={() => onBan(user.id, !user.is_banned)}>
               {user.is_banned ? <><ShieldCheck className="w-4 h-4 mr-2" />Unban user</> : <><Ban className="w-4 h-4 mr-2" />Ban user</>}
             </Button>
