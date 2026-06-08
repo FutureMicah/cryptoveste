@@ -4,7 +4,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Eye, Check, X, Inbox } from "lucide-react";
+import { Eye, Check, X, Inbox, Pencil, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import ProofViewer from "./ProofViewer";
 import EmptyState, { ListSkeleton } from "@/components/EmptyState";
 import { logAdminAction } from "@/lib/auditLog";
@@ -23,6 +25,32 @@ const DepositsApproval = () => {
   const [items, setItems] = useState<Deposit[] | null>(null);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
   const [proofPath, setProofPath] = useState<string | null>(null);
+  const [edit, setEdit] = useState<Deposit | null>(null);
+  const [editForm, setEditForm] = useState({ amount: "", status: "pending", note: "" });
+
+  const openEdit = (d: Deposit) => {
+    setEdit(d);
+    setEditForm({ amount: String(d.amount_usd), status: d.status, note: "" });
+  };
+
+  const saveEdit = async () => {
+    if (!edit) return;
+    const { error } = await supabase.rpc("admin_update_deposit", {
+      _deposit_id: edit.id, _new_amount: parseFloat(editForm.amount),
+      _new_status: editForm.status, _note: editForm.note || null,
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Deposit updated");
+    setEdit(null); load();
+  };
+
+  const remove = async (d: Deposit) => {
+    if (!confirm("Delete this deposit? Wallet impact will be reversed if approved.")) return;
+    const { error } = await supabase.rpc("admin_delete_deposit", { _deposit_id: d.id });
+    if (error) return toast.error(error.message);
+    toast.success("Deposit deleted"); load();
+  };
+
 
   const load = async () => {
     let q = supabase.from("deposits").select("*").order("created_at", { ascending: false });
@@ -86,6 +114,8 @@ const DepositsApproval = () => {
                       </Button>
                     </>
                   )}
+                  <Button size="sm" variant="ghost" onClick={() => openEdit(d)}><Pencil className="w-4 h-4" /></Button>
+                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => remove(d)}><Trash2 className="w-4 h-4" /></Button>
                 </div>
               </div>
             </Card>
@@ -94,6 +124,35 @@ const DepositsApproval = () => {
       )}
 
       <ProofViewer path={proofPath} onClose={() => setProofPath(null)} />
+
+      <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader><DialogTitle>Edit deposit</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground">Amount (USD)</label>
+              <Input type="number" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} className="rounded-xl" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Status</label>
+              <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm">
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Admin note</label>
+              <Input value={editForm.note} onChange={(e) => setEditForm({ ...editForm, note: e.target.value })} className="rounded-xl" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEdit(null)} className="rounded-full">Cancel</Button>
+            <Button onClick={saveEdit} className="rounded-full gradient-lime border-0 text-primary-foreground">Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
