@@ -1,70 +1,53 @@
-# Build Plan
+# Plan — Expanded Admin Controls & Stronger Signup
 
-## 1. Multi-crypto deposit addresses
-- Add a `deposit_addresses` table (currency, network, address, qr_url, is_active, min_amount) — admin editable.
-- Seed defaults: USDT BEP20 (existing), BTC, ETH, USDT TRC20.
-- `DepositPanel`: currency selector chips → shows the matching address + QR + min amount. Screenshot upload stays mandatory; no tx hash field (manual review).
-- Admin **Wallets** tab to add/edit/disable any address at any time.
+Big scope, so I'll ship in two batches. Confirm and I'll start with **Batch 1** immediately.
 
-## 2. KYC (mandatory for withdrawal, admin-only approval)
-- New `user_kyc` table: full_name, dob, country, id_type, id_number, id_front_url, id_back_url, selfie_url, status (pending/approved/rejected), reviewed_by, reviewed_at, rejection_reason.
-- Storage bucket `kyc-documents` (private, user-scoped paths).
-- User `/kyc` page to submit and view status.
-- `WithdrawPage` blocks submission unless KYC = approved, with a CTA to /kyc.
-- Admin **KYC** tab: review, view docs (ProofViewer), approve/reject with reason.
+## Batch 1 — Admin power tools (highest impact)
 
-## 3. Profile + avatar upload
-- Add `avatar_url`, `phone`, `country` to profiles.
-- Storage bucket `avatars` (public).
-- New `/profile` page (mobile, lime aesthetic): avatar upload, name, phone, country, bank details, change password, sign out.
-- Avatar shown in AppShell header.
+### 1. Edit user profile from admin
+In `UsersManager` user-detail sheet, add an **"Edit profile"** card:
+- First name, last name, username, phone, country, avatar URL
+- Saves to `profiles` (admin RLS already allows update)
+- Logs `profile_updated` to audit log
 
-## 4. Full admin control over user accounts
-New admin tabs/screens:
-- **Users**: list all users with search; per-user drawer showing wallet, investments, KYC, deposits, withdrawals. Actions:
-  - Manual credit/debit balance (writes a `manual_adjustments` row + updates wallet via SECURITY DEFINER function `admin_adjust_balance`).
-  - Create investment on user's behalf (any plan, any amount — uses SECURITY DEFINER `admin_create_investment` bypassing balance check).
-  - Cancel/refund an active investment (`admin_cancel_investment` — refunds remaining principal to wallet).
-  - Ban / unban user (adds `is_banned` to profiles; auth gate redirects banned users to a "suspended" screen and signs them out).
-  - Reset/force sign-out (revoke sessions via admin API — or set `is_banned` flag that client honors).
-- **Deposits/Withdrawals**: keep existing approve/reject, plus admin can manually create a deposit for a user (top-up).
-- **Plans**: existing CRUD continues.
-- **Investments**: existing list + `distribute_due_roi` + new per-row cancel.
+### 2. Edit / reverse / delete deposits & withdrawals
+New admin RPCs (server-side role check + audit log):
+- `admin_update_deposit(id, new_amount, new_status, note)` — reverses wallet credit if approved→rejected, re-credits delta on amount change
+- `admin_delete_deposit(id)` — reverses wallet impact then deletes
+- `admin_update_withdrawal(id, new_amount, new_status, note)` — refunds wallet if approved→rejected
+- `admin_delete_withdrawal(id)` — refunds if needed then deletes
+UI: pencil + trash icons on each row in `DepositsApproval` and `WithdrawalsApproval` with confirm dialogs.
 
-## 5. Announcements
-- `announcements` table (title, body, severity, is_active, starts_at, ends_at, created_by).
-- Admin **Announcements** tab: create / edit / toggle active.
-- User dashboard shows the latest active announcement as a dismissible banner; realtime updates via Supabase channel.
+### 3. Reset password / force logout
+New edge function `admin-user-actions` (uses service role key):
+- `reset_password`: triggers Supabase recovery email
+- `force_signout`: invokes `auth.admin.signOut(user_id, 'global')`
+- `update_email`: admin can change a user's email
+Buttons in `UsersManager` sheet. All actions audit-logged.
 
-## 6. Live chat / support
-- The project already has `support_tickets` and `support_messages` tables + `SupportChatWidget` and `SupportChatManagement`. Wire them in:
-  - Mount `SupportChatWidget` on Dashboard (floating bubble above BottomNav).
-  - Add **Support** tab in admin pointing at `SupportChatManagement`.
+### 4. Broadcast notifications & email blast
+New admin tab **Broadcasts**:
+- Compose subject + body, choose channel (in-app toast + announcement / email / both)
+- In-app: inserts an announcement row with `severity='info'` + immediate `starts_at`
+- Email: edge function `broadcast-email` loops over `profiles.email` via Resend (already configured)
+- Optional segment filter (all / banned excluded / KYC-approved only)
 
-## 7. ROI ↔ investment coupling (verification)
-ROI already flows through `distribute_due_roi()` pro-rata against `expected_return = principal × (1 + plan.roi_percent/100)` over `duration_days`. Add a cron-style "Auto-distribute" toggle in admin (manual button stays). Confirm InvestPanel displays the exact ROI % and dollar profit from the selected plan and that completed investments stop accruing.
+## Batch 2 — Signup hardening
 
-## 8. UX polish
-- Bottom nav: add a 6th item or fold Profile under header avatar (keep 5 nav items: Home / Invest / Deposit / Send / History; Profile via avatar tap).
-- All new screens use the lime aesthetic + EmptyState + mobile-first 320px layout.
+### 5. Phone number at signup
+- Add **phone** field (with country code via `react-phone-number-input` styled to match) to `SignUpFlow` identity step
+- Pass into `auth.signUp` meta → `handle_new_user` already inserts into `profiles.phone` (need migration to read from raw_user_meta_data)
+- E.164 validation, mark required
 
----
+### 6. Mandatory KYC step in signup
+- Insert a new step in `SignUpFlow` after identity/payment: collect full name, DOB, ID type, ID number + upload (front, back, selfie) → `user_kyc` row with `status='pending'`
+- Dashboard already blocks withdrawal until approved; we'll also gate access to `/invest` behind KYC submitted (not necessarily approved) with a soft banner
 
-## Database migrations (single migration)
-- New tables: `deposit_addresses`, `user_kyc`, `manual_adjustments`, `announcements`.
-- New columns: `profiles.avatar_url`, `profiles.phone`, `profiles.country`, `profiles.is_banned`.
-- New SECURITY DEFINER functions: `admin_adjust_balance`, `admin_create_investment`, `admin_cancel_investment`, `admin_credit_deposit`.
-- New storage buckets: `avatars` (public), `kyc-documents` (private).
-- RLS: users read own (kyc/adjustments); admins manage all; deposit_addresses + active announcements readable by everyone.
+## Technical notes
+- All new admin RPCs use `SECURITY DEFINER` + `has_role` check + `log_admin_action`
+- Edge functions require `SUPABASE_SERVICE_ROLE_KEY` (already set)
+- New `broadcast-email` function uses existing `RESEND_API_KEY`
+- No new tables needed for Batch 1; reuse `announcements` for in-app broadcasts
+- Batch 2 adds `phone` validation only — `profiles.phone` column already exists
 
-## New / edited files (high level)
-- New pages: `src/pages/KycPage.tsx`, `src/pages/ProfilePage.tsx`.
-- New admin components: `UsersManager.tsx`, `KycApproval.tsx`, `AnnouncementsManager.tsx`, `DepositAddressesManager.tsx`, plus per-user `UserDetailDrawer.tsx`.
-- Edited: `DepositPanel.tsx` (currency selector + dynamic address), `WithdrawPanel.tsx` (KYC gate), `AppShell.tsx` (avatar + announcement banner), `AdminDashboard.tsx` (new tabs), `App.tsx` (new routes), `BottomNav.tsx` (unchanged; Profile via header).
-
-## Out of scope for this pass
-- Email notifications on KYC/deposit decisions (Resend secret exists; can wire in a follow-up).
-- Real-time push beyond what already exists.
-- Cron-scheduled auto ROI (keep manual button for now; can add a pg_cron job later).
-
-Once you approve, I'll ship it as one migration + the file changes above.
+Reply **"go"** to start Batch 1, or tell me to reorder/skip anything.

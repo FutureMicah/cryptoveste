@@ -1086,6 +1086,44 @@ export type Database = {
         Args: { _amount: number; _note: string; _user_id: string }
         Returns: undefined
       }
+      admin_delete_deposit: {
+        Args: { _deposit_id: string }
+        Returns: undefined
+      }
+      admin_delete_withdrawal: {
+        Args: { _withdrawal_id: string }
+        Returns: undefined
+      }
+      admin_update_deposit: {
+        Args: {
+          _deposit_id: string
+          _new_amount: number
+          _new_status: string
+          _note?: string
+        }
+        Returns: undefined
+      }
+      admin_update_profile: {
+        Args: {
+          _avatar_url: string
+          _country: string
+          _first_name: string
+          _last_name: string
+          _phone: string
+          _user_id: string
+          _username: string
+        }
+        Returns: undefined
+      }
+      admin_update_withdrawal: {
+        Args: {
+          _new_amount: number
+          _new_status: string
+          _note?: string
+          _withdrawal_id: string
+        }
+        Returns: undefined
+      }
       credit_investment_roi: {
         Args: { _amount: number; _investment_id: string }
         Returns: undefined
