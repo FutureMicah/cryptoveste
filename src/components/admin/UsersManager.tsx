@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { Search, Ban, ShieldOff, ShieldCheck, DollarSign, Plus, X, Inbox, User as UserIcon } from "lucide-react";
+import { Search, Ban, ShieldOff, ShieldCheck, DollarSign, Plus, X, Inbox, User as UserIcon, KeyRound, LogOut, Mail, UserCog } from "lucide-react";
 import EmptyState, { ListSkeleton } from "@/components/EmptyState";
 import { logAdminAction } from "@/lib/auditLog";
 
@@ -60,6 +60,12 @@ const UserRow = ({ user, onBan, onChanged }: { user: any; onBan: (id: string, b:
   const [adj, setAdj] = useState({ amount: "", reason: "", kind: "credit" });
   const [topup, setTopup] = useState({ amount: "", note: "" });
   const [invForm, setInvForm] = useState({ plan_id: "", amount: "" });
+  const [profileForm, setProfileForm] = useState({
+    first_name: user.first_name ?? "", last_name: user.last_name ?? "",
+    username: user.username ?? "", phone: user.phone ?? "",
+    country: user.country ?? "", avatar_url: user.avatar_url ?? "",
+  });
+  const [newEmail, setNewEmail] = useState("");
 
   const load = async () => {
     const [w, inv, dep, wd, kyc] = await Promise.all([
@@ -115,6 +121,39 @@ const UserRow = ({ user, onBan, onChanged }: { user: any; onBan: (id: string, b:
     if (error) return toast.error(error.message);
     toast.success("Cancelled");
     load();
+  };
+
+  const saveProfile = async () => {
+    const { error } = await supabase.rpc("admin_update_profile", {
+      _user_id: user.id,
+      _first_name: profileForm.first_name || null,
+      _last_name: profileForm.last_name || null,
+      _username: profileForm.username || null,
+      _phone: profileForm.phone || null,
+      _country: profileForm.country || null,
+      _avatar_url: profileForm.avatar_url || null,
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Profile updated");
+    onChanged();
+  };
+
+  const callAction = async (action: string, extra: any = {}) => {
+    const { data, error } = await supabase.functions.invoke("admin-user-actions", {
+      body: { action, user_id: user.id, ...extra },
+    });
+    if (error || data?.error) return toast.error(error?.message ?? data?.error ?? "Failed");
+    return data;
+  };
+  const doResetPwd = async () => { if (await callAction("reset_password")) toast.success("Reset email sent"); };
+  const doForceSignout = async () => {
+    if (!confirm("Sign this user out of every session?")) return;
+    if (await callAction("force_signout")) toast.success("User signed out");
+  };
+  const doUpdateEmail = async () => {
+    if (!newEmail) return toast.error("Enter new email");
+    if (!confirm(`Change this user's email to ${newEmail}?`)) return;
+    if (await callAction("update_email", { email: newEmail })) { toast.success("Email updated"); setNewEmail(""); }
   };
 
   return (
@@ -197,6 +236,31 @@ const UserRow = ({ user, onBan, onChanged }: { user: any; onBan: (id: string, b:
                   </div>
                 ))
               }
+            </Card>
+
+            <Card className="p-3 rounded-2xl space-y-2">
+              <p className="text-xs font-semibold flex items-center gap-1"><UserCog className="w-3.5 h-3.5 text-primary" />Edit profile</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Input placeholder="First name" value={profileForm.first_name} onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })} className="rounded-xl h-9 text-xs" />
+                <Input placeholder="Last name" value={profileForm.last_name} onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })} className="rounded-xl h-9 text-xs" />
+                <Input placeholder="Username" value={profileForm.username} onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })} className="rounded-xl h-9 text-xs" />
+                <Input placeholder="Phone" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} className="rounded-xl h-9 text-xs" />
+                <Input placeholder="Country" value={profileForm.country} onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })} className="rounded-xl h-9 text-xs" />
+                <Input placeholder="Avatar URL" value={profileForm.avatar_url} onChange={(e) => setProfileForm({ ...profileForm, avatar_url: e.target.value })} className="rounded-xl h-9 text-xs" />
+              </div>
+              <Button onClick={saveProfile} size="sm" className="w-full rounded-full" variant="outline">Save profile</Button>
+            </Card>
+
+            <Card className="p-3 rounded-2xl space-y-2">
+              <p className="text-xs font-semibold">Account actions</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button onClick={doResetPwd} size="sm" variant="outline" className="rounded-full"><KeyRound className="w-3.5 h-3.5 mr-1" />Reset password</Button>
+                <Button onClick={doForceSignout} size="sm" variant="outline" className="rounded-full"><LogOut className="w-3.5 h-3.5 mr-1" />Force sign-out</Button>
+              </div>
+              <div className="flex gap-2">
+                <Input type="email" placeholder="new email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className="rounded-xl h-9 text-xs flex-1" />
+                <Button onClick={doUpdateEmail} size="sm" variant="outline" className="rounded-full"><Mail className="w-3.5 h-3.5 mr-1" />Update</Button>
+              </div>
             </Card>
 
             <Button variant={user.is_banned ? "outline" : "destructive"} className="w-full rounded-full" onClick={() => onBan(user.id, !user.is_banned)}>

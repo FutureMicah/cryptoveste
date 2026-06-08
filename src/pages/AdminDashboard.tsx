@@ -18,6 +18,7 @@ import AnnouncementsManager from "@/components/admin/AnnouncementsManager";
 import DepositAddressesManager from "@/components/admin/DepositAddressesManager";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import { SupportChatManagement } from "@/components/admin/SupportChatManagement";
+import BroadcastsManager from "@/components/admin/BroadcastsManager";
 
 const ADMIN_EMAIL = "futuremicah4@gmail.com";
 
@@ -101,6 +102,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="plans">Plans</TabsTrigger>
             <TabsTrigger value="wallets">Wallets</TabsTrigger>
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
+            <TabsTrigger value="broadcasts">Broadcasts</TabsTrigger>
             <TabsTrigger value="support">Support</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="audit">Audit log</TabsTrigger>
@@ -113,6 +115,7 @@ const AdminDashboard = () => {
           <TabsContent value="plans" className="mt-6"><PlansManager /></TabsContent>
           <TabsContent value="wallets" className="mt-6"><DepositAddressesManager /></TabsContent>
           <TabsContent value="announcements" className="mt-6"><AnnouncementsManager /></TabsContent>
+          <TabsContent value="broadcasts" className="mt-6"><BroadcastsManager /></TabsContent>
           <TabsContent value="support" className="mt-6"><SupportChatManagement /></TabsContent>
           <TabsContent value="analytics" className="mt-6"><AnalyticsPanel /></TabsContent>
           <TabsContent value="audit" className="mt-6"><AuditLogViewer /></TabsContent>
