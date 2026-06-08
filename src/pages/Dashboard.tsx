@@ -34,14 +34,16 @@ const Dashboard = () => {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const [p, inv, dep, wd] = await Promise.all([
+      const [p, inv, dep, wd, kyc] = await Promise.all([
         supabase.from("profiles").select("first_name,avatar_url,is_banned").eq("id", user.id).maybeSingle(),
         supabase.from("user_investments").select("*, investment_plans(name, roi_percent, duration_days)")
           .eq("user_id", user.id).eq("status", "active").order("created_at", { ascending: false }).limit(3),
         supabase.from("deposits").select("id, amount_usd, status, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(4),
         supabase.from("withdrawals").select("id, amount_usd, status, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(4),
+        supabase.from("user_kyc").select("id").eq("user_id", user.id).maybeSingle(),
       ]);
       if (p.data?.is_banned) { await supabase.auth.signOut(); navigate("/"); return; }
+      if (!kyc.data) { navigate("/kyc"); return; }
       setProfile(p.data);
       setActiveInv((inv.data as any[]) ?? []);
       const merged = [
