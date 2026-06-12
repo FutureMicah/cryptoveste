@@ -46,6 +46,24 @@ const AdminDashboard = () => {
     })();
   }, [user, loading]);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    const loadUnread = async () => {
+      const { count } = await supabase
+        .from("support_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("sender_type", "user")
+        .eq("is_read", false);
+      setUnreadSupport(count ?? 0);
+    };
+    loadUnread();
+    const ch = supabase
+      .channel("admin-support-unread")
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_messages" }, loadUnread)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [isAdmin]);
+
   if (loading || checking) return null;
 
   if (!user) {
