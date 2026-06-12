@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Shield, LogOut, Zap } from "lucide-react";
+import { Shield, LogOut, Zap, MessageCircle } from "lucide-react";
 import AdminOverview from "@/components/admin/AdminOverview";
 import PlansManager from "@/components/admin/PlansManager";
 import DepositsApproval from "@/components/admin/DepositsApproval";
