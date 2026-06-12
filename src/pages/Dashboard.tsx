@@ -54,11 +54,22 @@ const Dashboard = () => {
       setRecentTx(merged);
     };
     load();
+    const loadUnread = async () => {
+      const { count } = await supabase
+        .from("support_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("sender_type", "admin")
+        .eq("is_read", false);
+      setUnread(count ?? 0);
+    };
+    loadUnread();
     const ch = supabase.channel(`dash-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "deposits", filter: `user_id=eq.${user.id}` }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "withdrawals", filter: `user_id=eq.${user.id}` }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "user_investments", filter: `user_id=eq.${user.id}` }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${user.id}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_messages", filter: `user_id=eq.${user.id}` }, loadUnread)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user, navigate]);
