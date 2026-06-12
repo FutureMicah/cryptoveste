@@ -126,7 +126,7 @@ const AdminDashboard = () => {
         <h1 className="text-2xl sm:text-3xl font-bold">Admin Dashboard</h1>
         <AdminOverview />
 
-        <Tabs defaultValue="deposits">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="flex-wrap h-auto justify-start gap-1">
             <TabsTrigger value="deposits">Deposits</TabsTrigger>
             <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
@@ -137,7 +137,14 @@ const AdminDashboard = () => {
             <TabsTrigger value="wallets">Wallets</TabsTrigger>
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
             <TabsTrigger value="broadcasts">Broadcasts</TabsTrigger>
-            <TabsTrigger value="support">Support</TabsTrigger>
+            <TabsTrigger value="support" className="relative">
+              Support
+              {unreadSupport > 0 && (
+                <span className="ml-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold inline-grid place-items-center">
+                  {unreadSupport > 9 ? "9+" : unreadSupport}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="audit">Audit log</TabsTrigger>
           </TabsList>
