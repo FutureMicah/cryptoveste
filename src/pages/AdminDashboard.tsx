@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Shield, LogOut, Zap } from "lucide-react";
+import { Shield, LogOut, Zap, MessageCircle } from "lucide-react";
 import AdminOverview from "@/components/admin/AdminOverview";
 import PlansManager from "@/components/admin/PlansManager";
 import DepositsApproval from "@/components/admin/DepositsApproval";
@@ -27,6 +27,8 @@ const AdminDashboard = () => {
   const { user, loading, signOut } = useAuth();
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [unreadSupport, setUnreadSupport] = useState(0);
+  const [activeTab, setActiveTab] = useState("deposits");
 
   useEffect(() => { document.title = "Admin — CryptoVest"; }, []);
 
@@ -43,6 +45,24 @@ const AdminDashboard = () => {
       setChecking(false);
     })();
   }, [user, loading]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const loadUnread = async () => {
+      const { count } = await supabase
+        .from("support_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("sender_type", "user")
+        .eq("is_read", false);
+      setUnreadSupport(count ?? 0);
+    };
+    loadUnread();
+    const ch = supabase
+      .channel("admin-support-unread")
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_messages" }, loadUnread)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [isAdmin]);
 
   if (loading || checking) return null;
 
@@ -82,9 +102,23 @@ const AdminDashboard = () => {
             </span>
             CryptoVest <span className="text-xs text-muted-foreground ml-1">Admin</span>
           </Link>
-          <Button variant="ghost" size="sm" onClick={() => { signOut(); navigate("/"); }}>
-            <LogOut className="w-4 h-4 mr-2" /> Sign out
-          </Button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setActiveTab("support")}
+              className="relative w-9 h-9 rounded-full bg-card border border-border grid place-items-center hover:bg-accent transition-colors"
+              aria-label="Support messages"
+            >
+              <MessageCircle className="w-4 h-4" />
+              {unreadSupport > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold grid place-items-center animate-pulse">
+                  {unreadSupport > 9 ? "9+" : unreadSupport}
+                </span>
+              )}
+            </button>
+            <Button variant="ghost" size="sm" onClick={() => { signOut(); navigate("/"); }}>
+              <LogOut className="w-4 h-4 mr-2" /> Sign out
+            </Button>
+          </div>
         </div>
       </nav>
 
@@ -92,7 +126,7 @@ const AdminDashboard = () => {
         <h1 className="text-2xl sm:text-3xl font-bold">Admin Dashboard</h1>
         <AdminOverview />
 
-        <Tabs defaultValue="deposits">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="flex-wrap h-auto justify-start gap-1">
             <TabsTrigger value="deposits">Deposits</TabsTrigger>
             <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
@@ -103,7 +137,14 @@ const AdminDashboard = () => {
             <TabsTrigger value="wallets">Wallets</TabsTrigger>
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
             <TabsTrigger value="broadcasts">Broadcasts</TabsTrigger>
-            <TabsTrigger value="support">Support</TabsTrigger>
+            <TabsTrigger value="support" className="relative">
+              Support
+              {unreadSupport > 0 && (
+                <span className="ml-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold inline-grid place-items-center">
+                  {unreadSupport > 9 ? "9+" : unreadSupport}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="audit">Audit log</TabsTrigger>
           </TabsList>

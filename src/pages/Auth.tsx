@@ -38,7 +38,7 @@ const Auth = () => {
     } else {
       if (!/^\+?[0-9\s\-()]{7,20}$/.test(phone.trim())) {
         setLoading(false);
-        return toast.error("Enter a valid phone number with country code (e.g. +234…)");
+        return toast.error("Enter a valid phone number with country code (e.g. +1…)");
       }
       const { error } = await supabase.auth.signUp({
         email, password,
@@ -133,7 +133,7 @@ const Auth = () => {
                 <Label className="text-xs">Phone (with country code)</Label>
                 <div className="relative">
                   <Phone className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input type="tel" inputMode="tel" placeholder="+234 800 000 0000" value={phone} onChange={(e) => setPhone(e.target.value)} required className="h-12 rounded-2xl pl-11 bg-card border-border" />
+                  <Input type="tel" inputMode="tel" placeholder="+1 555 000 0000" value={phone} onChange={(e) => setPhone(e.target.value)} required className="h-12 rounded-2xl pl-11 bg-card border-border" />
                 </div>
               </div>
             </>

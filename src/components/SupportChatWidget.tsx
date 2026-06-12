@@ -76,6 +76,12 @@ export const SupportChatWidget = () => {
     }
   }, [isOpen, unreadCount]);
 
+  useEffect(() => {
+    const handler = () => setIsOpen(true);
+    window.addEventListener("open-support-chat", handler);
+    return () => window.removeEventListener("open-support-chat", handler);
+  }, []);
+
   const fetchMessages = async () => {
     if (!user) return;
     setLoading(true);

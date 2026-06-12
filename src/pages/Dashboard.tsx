@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  ArrowUpRight, ArrowDownLeft, TrendingUp, Plus, Bell, Shield, Eye, EyeOff,
+  ArrowUpRight, ArrowDownLeft, TrendingUp, Plus, Bell, Shield, Eye, EyeOff, MessageCircle,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
@@ -24,6 +24,7 @@ const Dashboard = () => {
   const [recentTx, setRecentTx] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
   const [hide, setHide] = useState(false);
+  const [unread, setUnread] = useState(0);
   const { prices } = useCryptoPrices();
 
   useEffect(() => {
@@ -53,11 +54,22 @@ const Dashboard = () => {
       setRecentTx(merged);
     };
     load();
+    const loadUnread = async () => {
+      const { count } = await supabase
+        .from("support_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("sender_type", "admin")
+        .eq("is_read", false);
+      setUnread(count ?? 0);
+    };
+    loadUnread();
     const ch = supabase.channel(`dash-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "deposits", filter: `user_id=eq.${user.id}` }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "withdrawals", filter: `user_id=eq.${user.id}` }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "user_investments", filter: `user_id=eq.${user.id}` }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${user.id}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_messages", filter: `user_id=eq.${user.id}` }, loadUnread)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user, navigate]);
@@ -86,6 +98,18 @@ const Dashboard = () => {
         <div className="flex gap-1.5 shrink-0">
           <button onClick={() => navigate("/admin")} className="w-9 h-9 rounded-full bg-card border border-border grid place-items-center" aria-label="Admin">
             <Shield className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-support-chat"))}
+            className="w-9 h-9 rounded-full bg-card border border-border grid place-items-center relative"
+            aria-label="Messages"
+          >
+            <MessageCircle className="w-4 h-4" />
+            {unread > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold grid place-items-center animate-pulse">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
           </button>
           <button className="w-9 h-9 rounded-full bg-card border border-border grid place-items-center" aria-label="Notifications">
             <Bell className="w-4 h-4" />

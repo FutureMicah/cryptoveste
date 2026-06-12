@@ -11,12 +11,13 @@ import { logAdminAction } from "@/lib/auditLog";
 
 const KycApproval = () => {
   const [items, setItems] = useState<any[] | null>(null);
-  const [filter, setFilter] = useState<"pending" | "all">("pending");
+  const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
   const [reasons, setReasons] = useState<Record<string, string>>({});
 
   const load = async () => {
+    setItems(null);
     let q = supabase.from("user_kyc").select("*").order("created_at", { ascending: false });
-    if (filter === "pending") q = q.eq("status", "pending");
+    if (filter !== "all") q = q.eq("status", filter);
     const { data } = await q;
     setItems(data ?? []);
   };
@@ -40,11 +41,12 @@ const KycApproval = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-2 flex-wrap">
         <h2 className="text-xl font-semibold">KYC Reviews</h2>
-        <div className="flex gap-2">
-          <Button size="sm" variant={filter === "pending" ? "default" : "outline"} onClick={() => setFilter("pending")}>Pending</Button>
-          <Button size="sm" variant={filter === "all" ? "default" : "outline"} onClick={() => setFilter("all")}>All</Button>
+        <div className="flex gap-1.5 flex-wrap">
+          {(["pending", "approved", "rejected", "all"] as const).map((f) => (
+            <Button key={f} size="sm" variant={filter === f ? "default" : "outline"} onClick={() => setFilter(f)} className="capitalize rounded-full h-8">{f}</Button>
+          ))}
         </div>
       </div>
 
