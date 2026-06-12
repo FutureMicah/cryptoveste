@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  ArrowUpRight, ArrowDownLeft, TrendingUp, Plus, Bell, Shield, Eye, EyeOff,
+  ArrowUpRight, ArrowDownLeft, TrendingUp, Plus, Bell, Shield, Eye, EyeOff, MessageCircle,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
