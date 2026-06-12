@@ -38,7 +38,7 @@ const Auth = () => {
     } else {
       if (!/^\+?[0-9\s\-()]{7,20}$/.test(phone.trim())) {
         setLoading(false);
-        return toast.error("Enter a valid phone number with country code (e.g. +234…)");
+        return toast.error("Enter a valid phone number with country code (e.g. +1…)");
       }
       const { error } = await supabase.auth.signUp({
         email, password,
