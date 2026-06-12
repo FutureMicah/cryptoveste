@@ -24,6 +24,7 @@ const Dashboard = () => {
   const [recentTx, setRecentTx] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
   const [hide, setHide] = useState(false);
+  const [unread, setUnread] = useState(0);
   const { prices } = useCryptoPrices();
 
   useEffect(() => {
