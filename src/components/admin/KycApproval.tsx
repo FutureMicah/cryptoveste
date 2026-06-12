@@ -11,12 +11,13 @@ import { logAdminAction } from "@/lib/auditLog";
 
 const KycApproval = () => {
   const [items, setItems] = useState<any[] | null>(null);
-  const [filter, setFilter] = useState<"pending" | "all">("pending");
+  const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
   const [reasons, setReasons] = useState<Record<string, string>>({});
 
   const load = async () => {
+    setItems(null);
     let q = supabase.from("user_kyc").select("*").order("created_at", { ascending: false });
-    if (filter === "pending") q = q.eq("status", "pending");
+    if (filter !== "all") q = q.eq("status", filter);
     const { data } = await q;
     setItems(data ?? []);
   };
