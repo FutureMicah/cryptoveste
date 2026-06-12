@@ -27,6 +27,8 @@ const AdminDashboard = () => {
   const { user, loading, signOut } = useAuth();
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [unreadSupport, setUnreadSupport] = useState(0);
+  const [activeTab, setActiveTab] = useState("deposits");
 
   useEffect(() => { document.title = "Admin — CryptoVest"; }, []);
 
