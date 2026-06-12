@@ -102,9 +102,23 @@ const AdminDashboard = () => {
             </span>
             CryptoVest <span className="text-xs text-muted-foreground ml-1">Admin</span>
           </Link>
-          <Button variant="ghost" size="sm" onClick={() => { signOut(); navigate("/"); }}>
-            <LogOut className="w-4 h-4 mr-2" /> Sign out
-          </Button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setActiveTab("support")}
+              className="relative w-9 h-9 rounded-full bg-card border border-border grid place-items-center hover:bg-accent transition-colors"
+              aria-label="Support messages"
+            >
+              <MessageCircle className="w-4 h-4" />
+              {unreadSupport > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold grid place-items-center animate-pulse">
+                  {unreadSupport > 9 ? "9+" : unreadSupport}
+                </span>
+              )}
+            </button>
+            <Button variant="ghost" size="sm" onClick={() => { signOut(); navigate("/"); }}>
+              <LogOut className="w-4 h-4 mr-2" /> Sign out
+            </Button>
+          </div>
         </div>
       </nav>
 
