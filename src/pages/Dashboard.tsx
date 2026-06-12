@@ -99,6 +99,18 @@ const Dashboard = () => {
           <button onClick={() => navigate("/admin")} className="w-9 h-9 rounded-full bg-card border border-border grid place-items-center" aria-label="Admin">
             <Shield className="w-4 h-4" />
           </button>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-support-chat"))}
+            className="w-9 h-9 rounded-full bg-card border border-border grid place-items-center relative"
+            aria-label="Messages"
+          >
+            <MessageCircle className="w-4 h-4" />
+            {unread > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold grid place-items-center animate-pulse">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </button>
           <button className="w-9 h-9 rounded-full bg-card border border-border grid place-items-center" aria-label="Notifications">
             <Bell className="w-4 h-4" />
           </button>
