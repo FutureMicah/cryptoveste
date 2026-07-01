@@ -43,7 +43,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signUp({
         email, password,
         options: {
-          emailRedirectTo: `${window.location.origin}/kyc`,
+          emailRedirectTo: `${window.location.origin}/dashboard`,
           data: { first_name: firstName, last_name: lastName, phone: phone.trim() },
         },
       });
