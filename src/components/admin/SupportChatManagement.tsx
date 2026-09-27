@@ -61,7 +61,69 @@ export const SupportChatManagement = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState('open');
+  const [newChatOpen, setNewChatOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [userResults, setUserResults] = useState<UserOption[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const searchUsers = async (q: string) => {
+    setUserSearch(q);
+    setSearchingUsers(true);
+    try {
+      let query = supabase
+        .from('profiles')
+        .select('id, first_name, last_name, username')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (q.trim()) {
+        query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,username.ilike.%${q}%`);
+      }
+      const { data } = await query;
+      setUserResults((data as UserOption[]) || []);
+    } finally {
+      setSearchingUsers(false);
+    }
+  };
+
+  const startChatWith = async (u: UserOption) => {
+    setStartingChat(true);
+    try {
+      // Find an existing ticket for this user, or create one
+      const { data: existing } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .eq('user_id', u.id)
+        .order('last_message_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let ticket = existing;
+      if (!ticket) {
+        const { data: created, error } = await supabase
+          .from('support_tickets')
+          .insert({ user_id: u.id, status: 'open', subject: 'Admin initiated chat', priority: 'normal' })
+          .select()
+          .single();
+        if (error) throw error;
+        ticket = created;
+      } else if (ticket.status === 'closed' || ticket.status === 'resolved') {
+        await supabase.from('support_tickets').update({ status: 'open' }).eq('id', ticket.id);
+        ticket = { ...ticket, status: 'open' };
+      }
+
+      setNewChatOpen(false);
+      setUserSearch('');
+      setActiveTab('all');
+      setSelectedTicket({ ...ticket, profiles: u } as Ticket);
+      fetchTickets();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message || 'Could not start chat', variant: 'destructive' });
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   useEffect(() => {
     fetchTickets();
