@@ -547,6 +547,57 @@ export const SupportChatManagement = () => {
           </CardContent>
         )}
       </Card>
+
+      {/* New chat: message a client first */}
+      <Dialog open={newChatOpen} onOpenChange={setNewChatOpen}>
+        <DialogContent className="bg-gray-950 border-amber-500/20 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-amber-400 flex items-center gap-2">
+              <MessageSquarePlus className="w-5 h-5" />
+              Message a client
+            </DialogTitle>
+          </DialogHeader>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <Input
+              value={userSearch}
+              onChange={(e) => searchUsers(e.target.value)}
+              placeholder="Search by name or username..."
+              className="pl-9 bg-gray-900 border-gray-700 focus:border-amber-500 text-white"
+            />
+          </div>
+          <ScrollArea className="h-[320px] mt-2">
+            {searchingUsers ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+              </div>
+            ) : userResults.length === 0 ? (
+              <p className="text-center text-gray-500 py-8 text-sm">No clients found</p>
+            ) : (
+              <div className="divide-y divide-gray-800">
+                {userResults.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => startChatWith(u)}
+                    disabled={startingChat}
+                    className="w-full p-3 text-left hover:bg-gray-900/60 transition-colors flex items-center gap-3 disabled:opacity-50"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white truncate">
+                        {`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'Unknown'}
+                      </p>
+                      {u.username && <p className="text-xs text-gray-500 truncate">@{u.username}</p>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
