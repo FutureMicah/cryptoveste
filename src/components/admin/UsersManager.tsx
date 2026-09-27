@@ -275,6 +275,10 @@ const UserRow = ({ user, onBan, onChanged }: { user: any; onBan: (id: string, b:
             <Button variant={user.is_banned ? "outline" : "destructive"} className="w-full rounded-full" onClick={() => onBan(user.id, !user.is_banned)}>
               {user.is_banned ? <><ShieldCheck className="w-4 h-4 mr-2" />Unban user</> : <><Ban className="w-4 h-4 mr-2" />Ban user</>}
             </Button>
+
+            <Button variant="outline" className="w-full rounded-full border-destructive/40 text-destructive hover:bg-destructive/10" onClick={doDeleteUser}>
+              <Trash2 className="w-4 h-4 mr-2" />Delete account permanently
+            </Button>
           </div>
         )}
       </SheetContent>
