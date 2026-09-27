@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   MessageCircle, 
   Send, 
@@ -13,11 +14,20 @@ import {
   Clock, 
   CheckCircle, 
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  MessageSquarePlus,
+  Search
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+
+interface UserOption {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  username: string | null;
+}
 
 interface Ticket {
   id: string;
@@ -51,7 +61,69 @@ export const SupportChatManagement = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState('open');
+  const [newChatOpen, setNewChatOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [userResults, setUserResults] = useState<UserOption[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const searchUsers = async (q: string) => {
+    setUserSearch(q);
+    setSearchingUsers(true);
+    try {
+      let query = supabase
+        .from('profiles')
+        .select('id, first_name, last_name, username')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (q.trim()) {
+        query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,username.ilike.%${q}%`);
+      }
+      const { data } = await query;
+      setUserResults((data as UserOption[]) || []);
+    } finally {
+      setSearchingUsers(false);
+    }
+  };
+
+  const startChatWith = async (u: UserOption) => {
+    setStartingChat(true);
+    try {
+      // Find an existing ticket for this user, or create one
+      const { data: existing } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .eq('user_id', u.id)
+        .order('last_message_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let ticket = existing;
+      if (!ticket) {
+        const { data: created, error } = await supabase
+          .from('support_tickets')
+          .insert({ user_id: u.id, status: 'open', subject: 'Admin initiated chat', priority: 'normal' })
+          .select()
+          .single();
+        if (error) throw error;
+        ticket = created;
+      } else if (ticket.status === 'closed' || ticket.status === 'resolved') {
+        await supabase.from('support_tickets').update({ status: 'open' }).eq('id', ticket.id);
+        ticket = { ...ticket, status: 'open' };
+      }
+
+      setNewChatOpen(false);
+      setUserSearch('');
+      setActiveTab('all');
+      setSelectedTicket({ ...ticket, profiles: u } as Ticket);
+      fetchTickets();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message || 'Could not start chat', variant: 'destructive' });
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   useEffect(() => {
     fetchTickets();
@@ -293,14 +365,25 @@ export const SupportChatManagement = () => {
               <MessageCircle className="w-5 h-5" />
               Support Tickets
             </CardTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={fetchTickets}
-              className="text-gray-400 hover:text-white"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setNewChatOpen(true); searchUsers(''); }}
+                className="text-amber-400 hover:text-amber-300"
+                title="Message a client first"
+              >
+                <MessageSquarePlus className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={fetchTickets}
+                className="text-gray-400 hover:text-white"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -464,6 +547,57 @@ export const SupportChatManagement = () => {
           </CardContent>
         )}
       </Card>
+
+      {/* New chat: message a client first */}
+      <Dialog open={newChatOpen} onOpenChange={setNewChatOpen}>
+        <DialogContent className="bg-gray-950 border-amber-500/20 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-amber-400 flex items-center gap-2">
+              <MessageSquarePlus className="w-5 h-5" />
+              Message a client
+            </DialogTitle>
+          </DialogHeader>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <Input
+              value={userSearch}
+              onChange={(e) => searchUsers(e.target.value)}
+              placeholder="Search by name or username..."
+              className="pl-9 bg-gray-900 border-gray-700 focus:border-amber-500 text-white"
+            />
+          </div>
+          <ScrollArea className="h-[320px] mt-2">
+            {searchingUsers ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+              </div>
+            ) : userResults.length === 0 ? (
+              <p className="text-center text-gray-500 py-8 text-sm">No clients found</p>
+            ) : (
+              <div className="divide-y divide-gray-800">
+                {userResults.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => startChatWith(u)}
+                    disabled={startingChat}
+                    className="w-full p-3 text-left hover:bg-gray-900/60 transition-colors flex items-center gap-3 disabled:opacity-50"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white truncate">
+                        {`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'Unknown'}
+                      </p>
+                      {u.username && <p className="text-xs text-gray-500 truncate">@{u.username}</p>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
