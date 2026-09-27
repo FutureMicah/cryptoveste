@@ -365,14 +365,25 @@ export const SupportChatManagement = () => {
               <MessageCircle className="w-5 h-5" />
               Support Tickets
             </CardTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={fetchTickets}
-              className="text-gray-400 hover:text-white"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setNewChatOpen(true); searchUsers(''); }}
+                className="text-amber-400 hover:text-amber-300"
+                title="Message a client first"
+              >
+                <MessageSquarePlus className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={fetchTickets}
+                className="text-gray-400 hover:text-white"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
