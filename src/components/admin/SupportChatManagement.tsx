@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   MessageCircle, 
   Send, 
@@ -13,11 +14,20 @@ import {
   Clock, 
   CheckCircle, 
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  MessageSquarePlus,
+  Search
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+
+interface UserOption {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  username: string | null;
+}
 
 interface Ticket {
   id: string;
