@@ -70,6 +70,22 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    if (action === "delete_user") {
+      if (!body.user_id) return json({ error: "user_id required" }, 400);
+      if (body.user_id === userData.user.id) return json({ error: "You cannot delete your own account" }, 400);
+      const { data: u } = await admin.auth.admin.getUserById(body.user_id);
+      if (!u?.user) return json({ error: "User not found" }, 404);
+      // Block deleting other admins
+      const { data: targetRoles } = await admin.from("user_roles").select("role").eq("user_id", body.user_id);
+      if ((targetRoles ?? []).some((r: any) => r.role === "admin" || r.role === "super_admin")) {
+        return json({ error: "Cannot delete an admin account" }, 403);
+      }
+      await logAction("user_deleted", { email: u.user.email }, body.user_id);
+      const { error } = await admin.auth.admin.deleteUser(body.user_id);
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
+    }
+
     if (action === "broadcast_email") {
       if (!RESEND_KEY) return json({ error: "RESEND_API_KEY not configured" }, 500);
       const segment = body.segment ?? "all"; // all | not_banned | kyc_approved

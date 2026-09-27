@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { Search, Ban, ShieldOff, ShieldCheck, DollarSign, Plus, X, Inbox, User as UserIcon, KeyRound, LogOut, Mail, UserCog } from "lucide-react";
+import { Search, Ban, ShieldOff, ShieldCheck, DollarSign, Plus, X, Inbox, User as UserIcon, KeyRound, LogOut, Mail, UserCog, Trash2 } from "lucide-react";
 import EmptyState, { ListSkeleton } from "@/components/EmptyState";
 import { logAdminAction } from "@/lib/auditLog";
 
@@ -155,6 +155,15 @@ const UserRow = ({ user, onBan, onChanged }: { user: any; onBan: (id: string, b:
     if (!confirm(`Change this user's email to ${newEmail}?`)) return;
     if (await callAction("update_email", { email: newEmail })) { toast.success("Email updated"); setNewEmail(""); }
   };
+  const doDeleteUser = async () => {
+    if (!confirm("PERMANENTLY delete this account? This removes their login, profile, wallet and history. This cannot be undone.")) return;
+    if (!confirm("Are you absolutely sure?")) return;
+    if (await callAction("delete_user")) {
+      toast.success("Account deleted");
+      setOpen(false);
+      onChanged();
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -265,6 +274,10 @@ const UserRow = ({ user, onBan, onChanged }: { user: any; onBan: (id: string, b:
 
             <Button variant={user.is_banned ? "outline" : "destructive"} className="w-full rounded-full" onClick={() => onBan(user.id, !user.is_banned)}>
               {user.is_banned ? <><ShieldCheck className="w-4 h-4 mr-2" />Unban user</> : <><Ban className="w-4 h-4 mr-2" />Ban user</>}
+            </Button>
+
+            <Button variant="outline" className="w-full rounded-full border-destructive/40 text-destructive hover:bg-destructive/10" onClick={doDeleteUser}>
+              <Trash2 className="w-4 h-4 mr-2" />Delete account permanently
             </Button>
           </div>
         )}
