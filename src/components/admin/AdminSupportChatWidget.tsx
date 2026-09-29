@@ -32,6 +32,7 @@ interface Ticket {
     username: string | null;
     email: string | null;
   } | null;
+  user_email?: string | null;
 }
 
 export const AdminSupportChatWidget = () => {
@@ -164,7 +165,7 @@ export const AdminSupportChatWidget = () => {
       }
 
       // Map the response to match our Ticket interface
-      const mappedTickets = (ticketsData || []).map((ticket: any) => ({
+      let mappedTickets = (ticketsData || []).map((ticket: any) => ({
         id: ticket.id,
         user_id: ticket.user_id,
         status: ticket.status,
@@ -173,7 +174,24 @@ export const AdminSupportChatWidget = () => {
         last_message_at: ticket.last_message_at,
         created_at: ticket.created_at,
         profiles: ticket.profiles?.[0] || ticket.profiles || null,
+        user_email: null,
       }));
+
+      // Fetch emails from auth.users for all tickets
+      try {
+        const userIds = mappedTickets.map(t => t.user_id);
+        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        
+        if (!authError && authUsers?.users) {
+          const emailMap = new Map(authUsers.users.map(u => [u.id, u.email]));
+          mappedTickets = mappedTickets.map(ticket => ({
+            ...ticket,
+            user_email: emailMap.get(ticket.user_id) || null,
+          }));
+        }
+      } catch (authError) {
+        console.warn('Could not fetch auth emails (may require admin API key):', authError);
+      }
 
       setTickets(mappedTickets as Ticket[]);
 
@@ -293,13 +311,17 @@ export const AdminSupportChatWidget = () => {
     if (ticket.profiles?.first_name || ticket.profiles?.last_name) {
       return `${ticket.profiles.first_name || ''} ${ticket.profiles.last_name || ''}`.trim();
     }
-    return ticket.profiles?.username || ticket.profiles?.email || 'Unknown User';
+    return ticket.profiles?.username || 'Unknown User';
+  };
+
+  const getUserEmail = (ticket: Ticket) => {
+    return ticket.user_email || ticket.profiles?.email || 'No email';
   };
 
   const filteredTickets = tickets.filter((ticket) => {
     if (!searchQuery.trim()) return true;
     const name = getUserName(ticket).toLowerCase();
-    const email = ticket.profiles?.email?.toLowerCase() || '';
+    const email = getUserEmail(ticket).toLowerCase();
     return name.includes(searchQuery.toLowerCase()) || email.includes(searchQuery.toLowerCase());
   });
 
@@ -362,7 +384,7 @@ export const AdminSupportChatWidget = () => {
                   </button>
                   <div className="mt-2">
                     <p className="font-semibold text-white">{getUserName(selectedTicket)}</p>
-                    <p className="text-xs text-gray-400">{selectedTicket.profiles?.email}</p>
+                    <p className="text-xs text-gray-400">{getUserEmail(selectedTicket)}</p>
                   </div>
                 </div>
 
@@ -469,7 +491,7 @@ export const AdminSupportChatWidget = () => {
                                 {getUserName(ticket)}
                               </p>
                               <p className="text-xs text-gray-500 truncate">
-                                {ticket.profiles?.email}
+                                {getUserEmail(ticket)}
                               </p>
                               <div className="flex items-center gap-2 mt-1">
                                 <span
