@@ -25,7 +25,12 @@ export const SupportChatWidget = () => {
   const [sending, setSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isOpenRef = useRef(isOpen);
   const { user, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -46,13 +51,17 @@ export const SupportChatWidget = () => {
           (payload) => {
             const newMsg = payload.new as Message;
             setMessages((prev) => [...prev, newMsg]);
-            if (newMsg.sender_type === 'admin' && !isOpen) {
-              setUnreadCount((prev) => prev + 1);
-              toast({
-                title: "New support message",
-                description: "You have a new message from support",
-              });
-            }
+              if (newMsg.sender_type === 'admin') {
+                if (isOpenRef.current) {
+                  markMessagesAsRead();
+                } else {
+                  setUnreadCount((prev) => prev + 1);
+                  toast({
+                    title: "New support message",
+                    description: "You have a new message from support",
+                  });
+                }
+              }
           }
         )
         .subscribe();
@@ -61,7 +70,7 @@ export const SupportChatWidget = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [isAuthenticated, user, isOpen]);
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     if (scrollRef.current) {
