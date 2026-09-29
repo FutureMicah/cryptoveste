@@ -21,10 +21,6 @@ import { SupportChatManagement } from "@/components/admin/SupportChatManagement"
 import BroadcastsManager from "@/components/admin/BroadcastsManager";
 import AdminSupportChatWidget from "@/components/admin/AdminSupportChatWidget";
 
-...
-<AdminSupportChatWidget />
-
-
 const ADMIN_EMAIL = "futuremicah4@gmail.com";
 
 const AdminDashboard = () => {
@@ -167,6 +163,8 @@ const AdminDashboard = () => {
           <TabsContent value="audit" className="mt-6"><AuditLogViewer /></TabsContent>
         </Tabs>
       </main>
+
+      <AdminSupportChatWidget />
     </div>
   );
 };
