@@ -135,28 +135,47 @@ export const AdminSupportChatWidget = () => {
     if (!isAdmin) return;
     setTicketsLoading(true);
     try {
-      let query = supabase
+      // Use join to fetch tickets with profile data in one query
+      const { data: ticketsData, error } = await supabase
         .from('support_tickets')
-        .select('*')
+        .select(`
+          id,
+          user_id,
+          status,
+          subject,
+          priority,
+          last_message_at,
+          created_at,
+          profiles!inner(
+            first_name,
+            last_name,
+            username,
+            email
+          )
+        `)
         .in('status', ['open', 'in_progress'])
         .order('last_message_at', { ascending: false });
 
-      const { data: ticketsData, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tickets:', error);
+        setTickets([]);
+        setTicketsLoading(false);
+        return;
+      }
 
-      // Fetch profiles for each ticket
-      const ticketsWithProfiles = await Promise.all(
-        (ticketsData || []).map(async (ticket) => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, username, email')
-            .eq('id', ticket.user_id)
-            .single();
-          return { ...ticket, profiles: profileData };
-        })
-      );
+      // Map the response to match our Ticket interface
+      const mappedTickets = (ticketsData || []).map((ticket: any) => ({
+        id: ticket.id,
+        user_id: ticket.user_id,
+        status: ticket.status,
+        subject: ticket.subject,
+        priority: ticket.priority,
+        last_message_at: ticket.last_message_at,
+        created_at: ticket.created_at,
+        profiles: ticket.profiles?.[0] || ticket.profiles || null,
+      }));
 
-      setTickets(ticketsWithProfiles as Ticket[]);
+      setTickets(mappedTickets as Ticket[]);
 
       // Count unread
       const { count } = await supabase
@@ -167,6 +186,7 @@ export const AdminSupportChatWidget = () => {
       setUnreadCount(count ?? 0);
     } catch (error) {
       console.error('Error fetching tickets:', error);
+      setTickets([]);
     } finally {
       setTicketsLoading(false);
     }
@@ -273,7 +293,7 @@ export const AdminSupportChatWidget = () => {
     if (ticket.profiles?.first_name || ticket.profiles?.last_name) {
       return `${ticket.profiles.first_name || ''} ${ticket.profiles.last_name || ''}`.trim();
     }
-    return ticket.profiles?.username || 'Unknown User';
+    return ticket.profiles?.username || ticket.profiles?.email || 'Unknown User';
   };
 
   const filteredTickets = tickets.filter((ticket) => {
