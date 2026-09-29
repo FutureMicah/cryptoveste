@@ -19,6 +19,11 @@ import DepositAddressesManager from "@/components/admin/DepositAddressesManager"
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import { SupportChatManagement } from "@/components/admin/SupportChatManagement";
 import BroadcastsManager from "@/components/admin/BroadcastsManager";
+import AdminSupportChatWidget from "@/components/admin/AdminSupportChatWidget";
+
+...
+<AdminSupportChatWidget />
+
 
 const ADMIN_EMAIL = "futuremicah4@gmail.com";
 
