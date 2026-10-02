@@ -37,8 +37,9 @@ const KycPage = () => {
   }, [user]);
 
   const upload = async (key: "front" | "back" | "selfie", f: File) => {
+    if (!user) throw new Error("Please sign in again before uploading documents");
     const ext = f.name.split(".").pop();
-    const path = `${user!.id}/${key}-${Date.now()}.${ext}`;
+    const path = `${user.id}/${key}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("kyc-documents").upload(path, f, { upsert: true });
     if (error) throw error;
     return path;
@@ -64,7 +65,6 @@ const KycPage = () => {
       let done = 0;
       for (const [k, f] of tasks) {
         const path = await upload(k as any, f);
-        updates[`id_${k === "selfie" ? "selfie_url" : k + "_url"}`] = path;
         if (k === "selfie") updates.selfie_url = path;
         else updates[`id_${k}_url`] = path;
         done++;

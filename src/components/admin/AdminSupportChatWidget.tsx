@@ -183,7 +183,9 @@ export const AdminSupportChatWidget = () => {
         const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
         
         if (!authError && authUsers?.users) {
-          const emailMap = new Map(authUsers.users.map(u => [u.id, u.email]));
+          const emailMap = new Map<string, string | undefined>(
+            authUsers.users.map((u): [string, string | undefined] => [u.id, u.email]),
+          );
           mappedTickets = mappedTickets.map(ticket => ({
             ...ticket,
             user_email: emailMap.get(ticket.user_id) || null,
