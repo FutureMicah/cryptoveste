@@ -78,6 +78,13 @@ const KycApproval = () => {
           )}
         </Card>
       ))}
+
+      <ProofViewer
+        path={viewing?.path ?? null}
+        onClose={() => setViewing(null)}
+        bucket="kyc-documents"
+        title={viewing?.title ?? "KYC document"}
+      />
     </div>
   );
 };
