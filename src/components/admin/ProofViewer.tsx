@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 interface ProofViewerProps {
   path: string | null;
   onClose: () => void;
+  bucket?: string;
+  title?: string;
 }
 
-const ProofViewer = ({ path, onClose }: ProofViewerProps) => {
+const ProofViewer = ({ path, onClose, bucket = "payment-screenshots", title = "Payment proof" }: ProofViewerProps) => {
   const [url, setUrl] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [rot, setRot] = useState(0);
@@ -16,9 +18,9 @@ const ProofViewer = ({ path, onClose }: ProofViewerProps) => {
   useEffect(() => {
     if (!path) return;
     setUrl(null); setZoom(1); setRot(0);
-    supabase.storage.from("payment-screenshots").createSignedUrl(path, 3600)
+    supabase.storage.from(bucket).createSignedUrl(path, 3600)
       .then(({ data }) => setUrl(data?.signedUrl ?? null));
-  }, [path]);
+  }, [path, bucket]);
 
   if (!path) return null;
 
