@@ -75,7 +75,7 @@ const ProofViewer = ({ path, onClose, bucket = "payment-screenshots", title = "P
 
   return (
     <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-[60] flex flex-col bg-background/95 backdrop-blur-sm">
-      <TransformWrapper key={`${path}-${rot}`} initialScale={1} minScale={0.75} maxScale={2} centerOnInit centerZoomedOut smooth wheel={{ step: 0.0015 }} doubleClick={{ disabled: true }} onTransformed={(_, state) => setZoom(state.scale)}>
+      <TransformWrapper key={`${path}-${rot}`} initialScale={1} minScale={0.75} maxScale={2} centerOnInit centerZoomedOut smooth wheel={{ step: 0.0015 }} doubleClick={{ disabled: true }} onTransform={(_, state) => setZoom(state.scale)}>
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-1 border-b border-border p-2 sm:p-3">
