@@ -25,18 +25,7 @@ const KycApproval = () => {
   };
   useEffect(() => { load(); }, [filter]);
 
-  const view = async (path: string) => {
-    // Open the tab synchronously so the browser doesn't block it as a popup,
-    // then navigate it once the signed URL is ready.
-    const win = window.open("", "_blank");
-    const { data, error } = await supabase.storage.from("kyc-documents").createSignedUrl(path, 300);
-    if (error || !data?.signedUrl) {
-      win?.close();
-      return toast.error(error?.message ?? "Could not load document");
-    }
-    if (win) win.location.href = data.signedUrl;
-    else window.open(data.signedUrl, "_blank");
-  };
+  const view = (path: string, title: string) => setViewing({ path, title });
 
   const decide = async (k: any, status: "approved" | "rejected") => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -73,9 +62,9 @@ const KycApproval = () => {
             <Badge>{k.status}</Badge>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {k.id_front_url && <Button size="sm" variant="outline" onClick={() => view(k.id_front_url)}><Eye className="w-3.5 h-3.5 mr-1" />Front</Button>}
-            {k.id_back_url && <Button size="sm" variant="outline" onClick={() => view(k.id_back_url)}><Eye className="w-3.5 h-3.5 mr-1" />Back</Button>}
-            {k.selfie_url && <Button size="sm" variant="outline" onClick={() => view(k.selfie_url)}><Eye className="w-3.5 h-3.5 mr-1" />Selfie</Button>}
+            {k.id_front_url && <Button size="sm" variant="outline" onClick={() => view(k.id_front_url, "ID front")}><Eye className="w-3.5 h-3.5 mr-1" />Front</Button>}
+            {k.id_back_url && <Button size="sm" variant="outline" onClick={() => view(k.id_back_url, "ID back")}><Eye className="w-3.5 h-3.5 mr-1" />Back</Button>}
+            {k.selfie_url && <Button size="sm" variant="outline" onClick={() => view(k.selfie_url, "Selfie")}><Eye className="w-3.5 h-3.5 mr-1" />Selfie</Button>}
           </div>
           {k.status === "pending" && (
             <div className="flex gap-2 flex-wrap pt-1">
