@@ -36,7 +36,7 @@ const ProofViewer = ({ path, onClose, bucket = "payment-screenshots", title = "P
   return (
     <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex flex-col" onClick={onClose}>
       <div className="flex items-center justify-between p-3 sm:p-4 border-b border-white/10" onClick={(e) => e.stopPropagation()}>
-        <p className="text-white text-sm font-semibold truncate">Payment proof</p>
+        <p className="text-white text-sm font-semibold truncate">{title}</p>
         <div className="flex items-center gap-2">
           <Button size="icon" variant="ghost" className="text-white hover:bg-white/10 h-9 w-9" onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}>
             <ZoomOut className="w-4 h-4" />
@@ -63,7 +63,7 @@ const ProofViewer = ({ path, onClose, bucket = "payment-screenshots", title = "P
         ) : (
           <img
             src={url}
-            alt="Payment proof"
+            alt={title}
             className="max-w-none transition-transform select-none"
             style={{ transform: `scale(${zoom}) rotate(${rot}deg)`, transformOrigin: "center" }}
             draggable={false}
