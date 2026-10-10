@@ -24,8 +24,16 @@ const KycApproval = () => {
   useEffect(() => { load(); }, [filter]);
 
   const view = async (path: string) => {
-    const { data } = await supabase.storage.from("kyc-documents").createSignedUrl(path, 300);
-    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+    // Open the tab synchronously so the browser doesn't block it as a popup,
+    // then navigate it once the signed URL is ready.
+    const win = window.open("", "_blank");
+    const { data, error } = await supabase.storage.from("kyc-documents").createSignedUrl(path, 300);
+    if (error || !data?.signedUrl) {
+      win?.close();
+      return toast.error(error?.message ?? "Could not load document");
+    }
+    if (win) win.location.href = data.signedUrl;
+    else window.open(data.signedUrl, "_blank");
   };
 
   const decide = async (k: any, status: "approved" | "rejected") => {
