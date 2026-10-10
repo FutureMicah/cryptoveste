@@ -8,11 +8,13 @@ import { toast } from "sonner";
 import { Check, X, ShieldCheck, Eye, Inbox } from "lucide-react";
 import EmptyState, { ListSkeleton } from "@/components/EmptyState";
 import { logAdminAction } from "@/lib/auditLog";
+import ProofViewer from "@/components/admin/ProofViewer";
 
 const KycApproval = () => {
   const [items, setItems] = useState<any[] | null>(null);
   const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
   const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [viewing, setViewing] = useState<{ path: string; title: string } | null>(null);
 
   const load = async () => {
     setItems(null);
