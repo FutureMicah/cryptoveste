@@ -8,11 +8,13 @@ import { toast } from "sonner";
 import { Check, X, ShieldCheck, Eye, Inbox } from "lucide-react";
 import EmptyState, { ListSkeleton } from "@/components/EmptyState";
 import { logAdminAction } from "@/lib/auditLog";
+import ProofViewer from "@/components/admin/ProofViewer";
 
 const KycApproval = () => {
   const [items, setItems] = useState<any[] | null>(null);
   const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
   const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [viewing, setViewing] = useState<{ path: string; title: string } | null>(null);
 
   const load = async () => {
     setItems(null);
@@ -23,10 +25,7 @@ const KycApproval = () => {
   };
   useEffect(() => { load(); }, [filter]);
 
-  const view = async (path: string) => {
-    const { data } = await supabase.storage.from("kyc-documents").createSignedUrl(path, 300);
-    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-  };
+  const view = (path: string, title: string) => setViewing({ path, title });
 
   const decide = async (k: any, status: "approved" | "rejected") => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -63,9 +62,9 @@ const KycApproval = () => {
             <Badge>{k.status}</Badge>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {k.id_front_url && <Button size="sm" variant="outline" onClick={() => view(k.id_front_url)}><Eye className="w-3.5 h-3.5 mr-1" />Front</Button>}
-            {k.id_back_url && <Button size="sm" variant="outline" onClick={() => view(k.id_back_url)}><Eye className="w-3.5 h-3.5 mr-1" />Back</Button>}
-            {k.selfie_url && <Button size="sm" variant="outline" onClick={() => view(k.selfie_url)}><Eye className="w-3.5 h-3.5 mr-1" />Selfie</Button>}
+            {k.id_front_url && <Button size="sm" variant="outline" onClick={() => view(k.id_front_url, "ID front")}><Eye className="w-3.5 h-3.5 mr-1" />Front</Button>}
+            {k.id_back_url && <Button size="sm" variant="outline" onClick={() => view(k.id_back_url, "ID back")}><Eye className="w-3.5 h-3.5 mr-1" />Back</Button>}
+            {k.selfie_url && <Button size="sm" variant="outline" onClick={() => view(k.selfie_url, "Selfie")}><Eye className="w-3.5 h-3.5 mr-1" />Selfie</Button>}
           </div>
           {k.status === "pending" && (
             <div className="flex gap-2 flex-wrap pt-1">
@@ -79,6 +78,13 @@ const KycApproval = () => {
           )}
         </Card>
       ))}
+
+      <ProofViewer
+        path={viewing?.path ?? null}
+        onClose={() => setViewing(null)}
+        bucket="kyc-documents"
+        title={viewing?.title ?? "KYC document"}
+      />
     </div>
   );
 };
