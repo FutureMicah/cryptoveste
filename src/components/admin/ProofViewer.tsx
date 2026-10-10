@@ -50,7 +50,7 @@ const ProofViewer = ({ path, onClose, bucket = "payment-screenshots", title = "P
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKey);
     };
-  }, [path, onClose]);
+  }, [path, onClose, rot]);
 
   if (!path) return null;
 
